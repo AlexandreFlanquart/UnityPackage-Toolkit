@@ -1,4 +1,4 @@
-# PRISMIFY-SCORM-UNITY
+# Toolkit package
 Package for Unity, Starter kit.
 
 <br>
