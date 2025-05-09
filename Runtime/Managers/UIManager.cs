@@ -5,7 +5,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 using System.Threading.Tasks;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public static class UIManager
     { 

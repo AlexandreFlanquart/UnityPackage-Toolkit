@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public class UI_Game : MonoBehaviour
     {

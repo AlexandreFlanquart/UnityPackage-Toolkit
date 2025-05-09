@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Threading.Tasks;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public abstract class CustomTransitionSO : TransitionSO
     {

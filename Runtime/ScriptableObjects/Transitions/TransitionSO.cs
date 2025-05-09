@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Threading.Tasks;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     [CreateAssetMenu(fileName = "TransitionSO", menuName = "ScriptableObjects/TransitionSO")]
     public abstract class TransitionSO : ScriptableObject

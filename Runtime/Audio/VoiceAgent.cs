@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public class VoiceAgent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {

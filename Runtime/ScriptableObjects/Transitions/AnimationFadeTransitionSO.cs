@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
-    [CreateAssetMenu(fileName = "TransitionTestSO", menuName = "ScriptableObjects/TransitionTestSO")]
-    public class TransitionTestSO : AnimationTransitionSO
+    [CreateAssetMenu(fileName = "AnimationFadeTransitionSO", menuName = "ScriptableObjects/AnimationFadeTransitionSO")]
+    public class AnimationFadeTransitionSO : AnimationTransitionSO
     {
         public override Task PlayTransition(GameObject target)
         {

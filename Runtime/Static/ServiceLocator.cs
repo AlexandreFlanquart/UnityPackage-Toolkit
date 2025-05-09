@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public static class ServiceLocator
     {

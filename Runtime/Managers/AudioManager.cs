@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     /// <summary>
     /// Static manager for audio settings including volume and mute states for different audio groups (Music, SFX, Voice)

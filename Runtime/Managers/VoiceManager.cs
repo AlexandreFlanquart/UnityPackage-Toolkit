@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public class VoiceManager : MonoBehaviour
     {

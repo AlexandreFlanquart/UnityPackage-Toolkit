@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public class UI_Menu : UI_Base
     {   

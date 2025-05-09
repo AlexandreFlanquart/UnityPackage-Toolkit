@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Threading.Tasks;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
-    [CreateAssetMenu(fileName = "FadeTransitionSO", menuName = "ScriptableObjects/FadeTransitionSO")]
-    public class FadeTransitionSO : CustomTransitionSO
+    [CreateAssetMenu(fileName = "FadeTransitionSO", menuName = "ScriptableObjects/CustomFadeTransitionSO")]
+    public class CustomFadeTransitionSO : CustomTransitionSO
     {
         public float fadeDuration = 1f;
 

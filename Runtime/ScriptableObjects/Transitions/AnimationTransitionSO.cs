@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using UnityEditor.Animations;
 using System.Linq;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     public abstract class AnimationTransitionSO : TransitionSO
     {

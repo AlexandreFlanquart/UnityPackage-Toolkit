@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Prismify.Toolkit
+namespace MyUnityPackage.Toolkit
 {
     [RequireComponent(typeof(CanvasHelper))]
     public abstract class UI_Base : MonoBehaviour
