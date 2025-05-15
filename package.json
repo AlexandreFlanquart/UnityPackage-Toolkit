@@ -6,6 +6,11 @@
   "unity": "6000.0",
   "dependencies": {},
   "author": {
-    "name": "AlexandreFlanquart"
-  }
+    "name": "Alexandre Flanquart"
+  },
+  "contributors": [
+    {
+    "name": "Victor Simon"
+    }
+  ]
 }
