@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -8,6 +9,20 @@ namespace MyUnityPackage.Toolkit
     /// </summary>
     public static class AudioManager
     {
+        public enum AudioType
+        {
+            Music,
+            SFX,
+            Voice
+        }
+        public struct AudioSettings
+        {
+            public string AUDIO_NAME;
+            public float defaultVolume;
+            public float currentVolume;
+            public bool isMuted;
+        }
+
         private static AudioMixer _audioMixer;
         private static AudioMixer AudioMixer
         {
@@ -24,14 +39,12 @@ namespace MyUnityPackage.Toolkit
                 return _audioMixer;
             }
         }
-        
-        // Exposed parameters in the AudioMixer
-        private const string MUSIC_VOLUME_PARAM = "MusicVolume";
-        private const string SFX_VOLUME_PARAM = "SFXVolume";
-        private const string VOICE_VOLUME_PARAM = "VoiceVolume";
-        
+
+        private static AudioSettings musicSettings;
+        private static AudioSettings sfxSettings;
+        private static AudioSettings voiceSettings;
+
         // Default values
-        private const float DEFAULT_VOLUME = 0.8f;
         private const float MIN_VOLUME = 0.0001f; // -80dB
         private const float MAX_VOLUME = 1f; // 0dB
 
@@ -41,9 +54,13 @@ namespace MyUnityPackage.Toolkit
         /// </summary>
         public static void Initialize()
         {
-            SetMusicVolume(DEFAULT_VOLUME);
-            SetSFXVolume(DEFAULT_VOLUME);
-            SetVoiceVolume(DEFAULT_VOLUME);
+            musicSettings = new AudioSettings { AUDIO_NAME = AudioType.Music.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            sfxSettings = new AudioSettings { AUDIO_NAME = AudioType.SFX.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            voiceSettings = new AudioSettings { AUDIO_NAME = AudioType.Voice.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+
+            SetMusicVolume(musicSettings.defaultVolume);
+            SetSFXVolume(sfxSettings.defaultVolume);
+            SetVoiceVolume(voiceSettings.defaultVolume);
         }
         #endregion
 
@@ -56,7 +73,7 @@ namespace MyUnityPackage.Toolkit
         private static void SetVolume(string parameter, float volume)
         {
             if (AudioMixer == null) return;
-            
+
             // Convert linear volume (0-1) to dB (-80 to 0)
             float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
             AudioMixer.SetFloat(parameter, dB);
@@ -70,7 +87,7 @@ namespace MyUnityPackage.Toolkit
         private static float GetVolume(string parameter)
         {
             if (AudioMixer == null) return 0f;
-            
+
             float dB;
             AudioMixer.GetFloat(parameter, out dB);
             return dB <= -80f ? 0f : Mathf.Pow(10f, dB / 20f);
@@ -79,16 +96,19 @@ namespace MyUnityPackage.Toolkit
 
         #region Public Volume Methods
         // Music Volume
-        public static void SetMusicVolume(float volume) => SetVolume(MUSIC_VOLUME_PARAM, volume);
-        public static float GetMusicVolume() => GetVolume(MUSIC_VOLUME_PARAM);
+        public static void SetMusicVolume(float volume) => SetVolume(musicSettings.AUDIO_NAME, volume);
+        public static float GetMusicVolume() => GetVolume(musicSettings.AUDIO_NAME);
 
         // SFX Volume
-        public static void SetSFXVolume(float volume) => SetVolume(SFX_VOLUME_PARAM, volume);
-        public static float GetSFXVolume() => GetVolume(SFX_VOLUME_PARAM);
+        public static void SetSFXVolume(float volume) => SetVolume(sfxSettings.AUDIO_NAME, volume);
+        public static float GetSFXVolume() => GetVolume(sfxSettings.AUDIO_NAME);
 
         // Voice Volume
-        public static void SetVoiceVolume(float volume) => SetVolume(VOICE_VOLUME_PARAM, volume);
-        public static float GetVoiceVolume() => GetVolume(VOICE_VOLUME_PARAM);
+        public static void SetVoiceVolume(float volume) => SetVolume(voiceSettings.AUDIO_NAME, volume);
+        public static float GetVoiceVolume() => GetVolume(voiceSettings.AUDIO_NAME);
+
+        public static void SetVolume(AudioType audioType, float volume) => SetVolume(audioType.ToString(), volume);
+        public static float GetVolume(AudioType audioType) => GetVolume(audioType.ToString());
         #endregion
 
         #region Mute Control Methods
@@ -99,14 +119,14 @@ namespace MyUnityPackage.Toolkit
         private static void ToggleMute(string parameter)
         {
             if (AudioMixer == null) return;
-            
+
             float currentVolume;
             AudioMixer.GetFloat(parameter, out currentVolume);
-            
+
             // If already muted (-80dB), restore to default volume
             if (currentVolume <= -80f)
             {
-                SetVolume(parameter, DEFAULT_VOLUME);
+                SetVolume(parameter, musicSettings.currentVolume);
             }
             else
             {
@@ -115,9 +135,10 @@ namespace MyUnityPackage.Toolkit
         }
 
         // Public Mute Methods
-        public static void ToggleMusicMute() => ToggleMute(MUSIC_VOLUME_PARAM);
-        public static void ToggleSFXMute() => ToggleMute(SFX_VOLUME_PARAM);
-        public static void ToggleVoiceMute() => ToggleMute(VOICE_VOLUME_PARAM);
+        public static void ToggleMusicMute() => ToggleMute(musicSettings.AUDIO_NAME);
+        public static void ToggleSFXMute() => ToggleMute(sfxSettings.AUDIO_NAME);
+        public static void ToggleVoiceMute() => ToggleMute(voiceSettings.AUDIO_NAME);
+        public static void ToggleMute(AudioType audioType) => ToggleMute(audioType.ToString());
         #endregion
     }
-} 
+}
