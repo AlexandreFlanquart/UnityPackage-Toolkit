@@ -12,5 +12,12 @@
     {
     "name": "Victor Simon"
     }
+  ],
+  "samples": [
+    {
+      "displayName": "Sample",
+      "description": "Start kit to begin a new project",
+      "path": "Samples~"
+    }
   ]
 }
