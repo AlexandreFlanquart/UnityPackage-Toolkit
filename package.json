@@ -1,6 +1,6 @@
 {
   "name": "com.myunitypackage.toolkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "UnityPackage-Toolkit",
   "description": "Unity Toolkit",
   "unity": "6000.0",
