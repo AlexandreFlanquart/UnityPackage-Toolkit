@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 
 namespace MyUnityPackage.Toolkit
 {
-    [CreateAssetMenu(fileName = "TransitionSO", menuName = "ScriptableObjects/TransitionSO")]
     public abstract class TransitionSO : ScriptableObject
     {
         [SerializeField] protected string _transitionName;
