@@ -31,3 +31,10 @@ Your package is now installed and ready to use in your Unity project. 🎮🚀
 
 ## 🛠️ Troubleshouting
 If there is an issue, report it to a dev.
+
+
+# Attribution
+
+Images
+PixelPerfect :https://www.flaticon.com/free-icon/volume_727269?term=unmute&page=1&position=5&origin=search&related_id=727269
+Mayor Icons : https://www.flaticon.com/free-icon/volume-mute_4546899?term=unmute&page=1&position=6&origin=search&related_id=4546899

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e37973dd95323a4c8fadb634433eedf, type: 3}
+  m_Name: MusicSettings
+  m_EditorClassIdentifier: 
+  defaultVolume: 0.4
+  mutedImage: {fileID: 21300000, guid: 6062d04f0d7fb4f4088ad2592605972d, type: 3}
+  unmutedImage: {fileID: 21300000, guid: 1fc72f3ee0c063d448aee868bbb2915b, type: 3}

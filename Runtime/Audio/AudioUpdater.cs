@@ -9,17 +9,16 @@ namespace MyUnityPackage.Toolkit
         [SerializeField] private AudioManager.AudioType audioType;
         [SerializeField] private TextMeshProUGUI volumeText;
         [SerializeField] private Button muteButton;
+        [SerializeField] private Slider slider;
         [SerializeField] private TextMeshProUGUI muteText;
         [SerializeField] private bool isMuted;
-        [SerializeField] private float defaultVolume;
 
-        private Slider slider;
+        [SerializeField] private AudioSettingsSO audioSettingsSO;
+
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
         {
-            slider = GetComponent<Slider>();
-
             if (slider != null)
             {
                 slider.onValueChanged.AddListener(OnVolumeChanged);
@@ -35,12 +34,20 @@ namespace MyUnityPackage.Toolkit
             {
                 muteButton.onClick.AddListener(OnMuteClicked);
             }
-            slider.value = defaultVolume;
-            AudioManager.SetVolume(audioType, defaultVolume);
-            UpdateVolumeText(volumeText, defaultVolume);
-            UpdateMuteText(muteText, defaultVolume);
-        }
 
+            //audioSettingsSO = Resources.Load<AudioSettingsSO>("AudioSettings");
+
+            //AudioManager.InitVolume(audioType,audioSettingsSO.defaultVolume);
+
+        }
+        public void InitVolumeUpdater()
+        {
+            AudioManager.InitVolume(audioType, audioSettingsSO.defaultVolume);
+            slider.value = audioSettingsSO.defaultVolume;
+            AudioManager.SetVolume(audioType, audioSettingsSO.defaultVolume);
+            UpdateVolumeText(volumeText, audioSettingsSO.defaultVolume);
+            UpdateMuteText(muteText, audioSettingsSO.defaultVolume);
+        }
         private void OnVolumeChanged(float value)
         {
             AudioManager.SetVolume(audioType, value);
@@ -57,6 +64,7 @@ namespace MyUnityPackage.Toolkit
                 UpdateVolumeText(volumeText, slider.value);
             }
             UpdateMuteText(muteText, slider.value);
+            UpdateMuteImage();
         }
         private void UpdateVolumeText(TextMeshProUGUI text, float value)
         {
@@ -72,6 +80,19 @@ namespace MyUnityPackage.Toolkit
             {
                 text.text = value <= 0.0001f ? "Unmute" : "Mute";
             }
+        }
+        private void UpdateMuteImage()
+        {
+            Debug.Log("UpdateMuteImage");
+            if (isMuted)
+            {
+                muteButton.image.sprite = audioSettingsSO.unmutedImage;
+            }
+            else
+            {
+                muteButton.image.sprite = audioSettingsSO.mutedImage;
+            }
+            isMuted = !isMuted;
         }
     }
 }

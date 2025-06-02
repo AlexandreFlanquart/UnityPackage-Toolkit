@@ -11,6 +11,7 @@ namespace MyUnityPackage.Toolkit{
 
         private void SetupGame()
         {
+            AudioManager.Initialize();
         }
 
         public void StartGame()

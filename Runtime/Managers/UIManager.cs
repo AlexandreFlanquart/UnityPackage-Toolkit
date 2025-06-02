@@ -8,20 +8,20 @@ using System.Threading.Tasks;
 namespace MyUnityPackage.Toolkit
 {
     public static class UIManager
-    { 
+    {
         private static Dictionary<object, object> canvasUI = new Dictionary<object, object>(); // store type and component
         private static Dictionary<string, TransitionSO> transitions = new Dictionary<string, TransitionSO>();
-        
+
         static UIManager()
         {
             Debug.Log("UIManager initialized");
-            
+
             // Initialize transitions dictionary
             transitions = new Dictionary<string, TransitionSO>();
-            
+
             // Load all TransitionSO from Resources/Transitions folder
             TransitionSO[] loadedTransitions = Resources.LoadAll<TransitionSO>("Transitions");
-            
+
             // Add each transition to the dictionary
             foreach (TransitionSO transition in loadedTransitions)
             {
@@ -114,6 +114,17 @@ namespace MyUnityPackage.Toolkit
                 Debug.LogWarning("Transition not found: " + transitionName);
             }
         }
+        public static void PlayTransitionByTrigger(GameObject canvas, Animator animator, string triggerName)
+        {
+            if (animator != null)
+            {
+                animator.SetTrigger(triggerName);
+            }
+            else
+            {
+                Debug.LogWarning("Animator not found: " + canvas.name);
+            }
+        }
+       
     }
-    
 }
