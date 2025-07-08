@@ -96,6 +96,11 @@ namespace MyUnityPackage.Toolkit
         {
             if (AudioMixer == null) return;
             Logger.LogMessage("current  volume : " + audioSetting.currentVolume);
+            if(audioSetting.currentVolume <= 0f && volume >= 0)
+                audioSetting.isMuted = false;
+            else if(audioSetting.currentVolume >= 0f && volume <= 0)
+                audioSetting.isMuted = true;
+
             // Convert linear volume (0-1) to dB (-80 to 0)
             float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);

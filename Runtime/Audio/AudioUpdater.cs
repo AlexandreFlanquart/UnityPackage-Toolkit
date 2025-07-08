@@ -64,15 +64,19 @@ namespace MyUnityPackage.Toolkit
         // Called when the volume slider value changes
         private void OnVolumeChanged(float value)
         {
+            float oldVolume = audioService.GetVolume(audioType);
             audioService.SetVolume(audioType, value);
+            UpdateMuteImage();
             UpdateVolumeText(value);
         }
 
         // Called when the mute button is clicked
         private void OnMuteClicked()
         {
+            Debug.Log("OnMuteClicked");
             AudioManager.ToggleMute(audioType);
-            isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
+            Debug.Log("isMuted : " + isMuted);
+
             Logger.LogMessage(audioType.ToString() + " isMuted: " + isMuted.ToString());
             if (slider != null)
             {
@@ -80,7 +84,7 @@ namespace MyUnityPackage.Toolkit
                 UpdateVolumeText(slider.value);
             }
             UpdateMuteText(slider.value);
-            UpdateMuteImage();
+            
         }
 
         // Updates the volume text UI to reflect the current value
@@ -106,10 +110,10 @@ namespace MyUnityPackage.Toolkit
         {
             if (muteButton == null) return;
 
-            if (isMuted)
-                muteButton.image.sprite = audioSettingsSO.unmutedImage;
-            else
+            if (AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted)
                 muteButton.image.sprite = audioSettingsSO.mutedImage;
+            else
+                muteButton.image.sprite = audioSettingsSO.unmutedImage;
         }
     }
 }
