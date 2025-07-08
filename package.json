@@ -1,0 +1,24 @@
+{
+  "name": "com.myunitypackage.toolkit",
+  "version": "1.0.1",
+  "displayName": "UnityPackage-Toolkit",
+  "description": "Unity Toolkit",
+  "unity": "6000.0",
+  "dependencies": {},
+  "author": {
+    "name": "Alexandre Flanquart"
+  },
+  "contributors": [
+    {
+    "name": "Victor Simon"
+    }
+  ],
+  "changelogUrl": "https://github.com/AlexandreFlanquart/UnityPackage-Toolkit/releases/tag/v1.0.1",
+  "samples": [
+    {
+      "displayName": "Sample",
+      "description": "Start kit to begin a new project",
+      "path": "Samples~"
+    }
+  ]
+}
