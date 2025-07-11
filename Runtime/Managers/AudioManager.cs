@@ -80,10 +80,10 @@ namespace MyUnityPackage.Toolkit
         public static void InitVolume(AudioType audioType, float volume) => InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
         private static void InitVolume(AudioSetting audioSetting, float volume)
         {
-            Logger.LogMessage("Init volume " + audioSetting.AUDIO_NAME);
+            //Logger.LogMessage("Init volume " + audioSetting.AUDIO_NAME);
             audioSetting.currentVolume = volume;
             audioSetting.defaultVolume = volume;
-           Logger.LogMessage("Volume change to :" + audioSetting.currentVolume);
+            //Logger.LogMessage("Volume change to :" + audioSetting.currentVolume);
         }
 
 
@@ -95,7 +95,7 @@ namespace MyUnityPackage.Toolkit
         private static void SetVolume(AudioSetting audioSetting, float volume)
         {
             if (AudioMixer == null) return;
-            Logger.LogMessage("current  volume : " + audioSetting.currentVolume);
+            //Logger.LogMessage("current  volume : " + audioSetting.currentVolume);
             if(audioSetting.currentVolume <= 0f && volume >= 0)
                 audioSetting.isMuted = false;
             else if(audioSetting.currentVolume >= 0f && volume <= 0)
@@ -106,7 +106,6 @@ namespace MyUnityPackage.Toolkit
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
 
             audioSetting.currentVolume = volume;
-            Logger.LogMessage("change volume to : " + audioSetting.currentVolume);
         }
 
         /// <summary>
@@ -149,27 +148,20 @@ namespace MyUnityPackage.Toolkit
         private static void ToggleMute(AudioSetting audioSetting)
         {
             if (AudioMixer == null) return;
-            Logger.LogMessage("audioType: " + audioSetting.currentVolume);
+            //Logger.LogMessage("audioType: " + audioSetting.currentVolume);
             float currentVolume;
             AudioMixer.GetFloat(audioSetting.AUDIO_NAME, out currentVolume);
 
-            Logger.LogMessage("currentVolume: " + currentVolume);
             // If already muted (-80dB), restore to default volume
             if (currentVolume <= -80f)
             {
                 SetVolume(audioSetting, audioSetting.beforeMutedVolume);
-                Logger.LogMessage("AudioType: " + audioSetting.currentVolume + "  currentVolume");
-                Logger.LogMessage("Mixer: " + currentVolume + "  currentVolume");
-                Logger.LogMessage("undemuted");
                 audioSetting.isMuted = false;
             }
             else
             {
                 audioSetting.beforeMutedVolume = audioSetting.currentVolume;
                 SetVolume(audioSetting, MIN_VOLUME);
-                Logger.LogMessage("AudioType: " + audioSetting.currentVolume + "  currentVolume");
-                Logger.LogMessage("Mixer: " + currentVolume + "  currentVolume");
-                Logger.LogMessage("muted");
                 audioSetting.isMuted = true;
             }
         }
