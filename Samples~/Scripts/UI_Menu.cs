@@ -12,6 +12,7 @@ namespace MyUnityPackage.Toolkit
         {
             UIManager.AddCanvasUI<UI_Menu>(gameObject);
             buttonPlay.onClick.AddListener(OnButtonPlayClick);
+
         }
 
         private void OnButtonPlayClick()

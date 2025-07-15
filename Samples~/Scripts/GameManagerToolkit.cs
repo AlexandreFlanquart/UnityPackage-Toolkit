@@ -5,7 +5,7 @@ namespace MyUnityPackage.Toolkit
 {
     public class GameManagerToolkit : MonoBehaviour
     {
-        private void Awake()
+        private void Start()
         {
             SetupGame();
         }
@@ -13,6 +13,13 @@ namespace MyUnityPackage.Toolkit
         private void SetupGame()
         {
             AudioManager.Initialize();
+
+            AudioUpdater[] audioUpdatersList = FindObjectsByType<AudioUpdater>(FindObjectsInactive.Include ,FindObjectsSortMode.None);
+            foreach (AudioUpdater audioUpdater in audioUpdatersList)
+            {
+                audioUpdater.Initialize(); 
+            }
+                
         }
 
         public void StartGame()

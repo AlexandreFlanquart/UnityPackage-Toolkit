@@ -20,7 +20,8 @@ namespace MyUnityPackage.Toolkit
         private IAudioService audioService;
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
-        public void Start()
+        //public void Start()
+        public void Initialize()
         {
             // If no audio service has been injected, use the default implementation
             if (audioService == null)

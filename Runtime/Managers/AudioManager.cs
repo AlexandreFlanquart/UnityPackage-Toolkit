@@ -70,7 +70,7 @@ namespace MyUnityPackage.Toolkit
                 { AudioType.SFX, sfxSetting },
                 { AudioType.Voice, voiceSetting }
             };
-
+           
             Debug.Log("Initialize" + AudioType.Music.ToString());
         }
         #endregion
@@ -103,6 +103,7 @@ namespace MyUnityPackage.Toolkit
 
             // Convert linear volume (0-1) to dB (-80 to 0)
             float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
+            //Logger.LogMessage(audioSetting.AUDIO_NAME+" " +dB);
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
 
             audioSetting.currentVolume = volume;
