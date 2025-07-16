@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1df951fe8dcc0724e93305a991eac404, type: 3}
-  m_Name: TransitionTestSOut
+  m_Name: AnimationFadeTransitionSO
   m_EditorClassIdentifier: 
-  _transitionName: FadeOut
-  _animationClip: {fileID: 7400000, guid: e091a780fdb095145a7546ac743d8053, type: 2}
+  _transitionName: FadeIn
+  _animationClip: {fileID: 7400000, guid: 14851a22289985a4e869396b7f4e73b9, type: 2}
   _animatorController: {fileID: 9100000, guid: ce246fcdea255a64f8b6e94e012d9e8d, type: 2}

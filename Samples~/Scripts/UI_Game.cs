@@ -20,11 +20,5 @@ namespace MyUnityPackage.Toolkit
             UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Game>().gameObject, "FadeOut");
             UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Menu>().gameObject, "FadeIn");
         }
-
-    // Update is called once per frame
-        void Update()
-        {
-            
-        }
     }
 }
