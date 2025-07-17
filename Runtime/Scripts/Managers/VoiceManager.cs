@@ -114,11 +114,11 @@ namespace MyUnityPackage.Toolkit
 
                 string bundleName = $"{pKey}";
                 string path = $"Assets/Voices/{pKey}";
-                #if UNITY_EDITOR
+                //#if UNITY_EDITOR
                     AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-                #elif UNITY_WEBGL
-                    AudioClip clip = ServiceLocator.GetService<AssetBundleManager>().GetAsset<AudioClip>(bundleName, path);
-                #endif
+                //#elif UNITY_WEBGL
+                  //  AudioClip clip = ServiceLocator.GetService<AssetBundleManager>().GetAsset<AudioClip>(bundleName, path);
+                //#endif
                 
                 if (clip != null)
                 {
