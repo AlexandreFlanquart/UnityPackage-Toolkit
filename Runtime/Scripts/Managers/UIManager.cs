@@ -84,7 +84,7 @@ namespace MyUnityPackage.Toolkit
                 }
                 else
                 {
-                   Logger.LogMessageWarningEditor("Can't find requested canvas UI");
+                   MUPLogger.LogMessageWarningEditor("Can't find requested canvas UI");
                     return null;
                 }
             }
@@ -97,7 +97,7 @@ namespace MyUnityPackage.Toolkit
         // Play a transition animation on the given canvas using a TransitionSO
         private static void PlayTransition(GameObject canvas, TransitionSO transition)
         {
-            Logger.LogMessage("PlayTransition : " + transition.transitionName + " at canvas : " + canvas.name);
+            MUPLogger.LogMessage("PlayTransition : " + transition.transitionName + " at canvas : " + canvas.name);
             // Play the transition
             transition.PlayTransition(canvas);
         }
@@ -111,7 +111,7 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-               Logger.LogMessageWarningEditor("Transition not found: " + transitionName + " check if this transition is in resource folder");
+               MUPLogger.LogMessageWarningEditor("Transition not found: " + transitionName + " check if this transition is in resource folder");
             }
         }
         // Play a transition by triggering an Animator parameter on the given canvas
@@ -123,7 +123,7 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-                Logger.LogMessageWarningEditor("Animator not found: " + canvas.name);
+                MUPLogger.LogMessageWarningEditor("Animator not found: " + canvas.name);
             }
         }
        

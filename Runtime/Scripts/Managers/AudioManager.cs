@@ -80,10 +80,10 @@ namespace MyUnityPackage.Toolkit
         public static void InitVolume(AudioType audioType, float volume) => InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
         private static void InitVolume(AudioSetting audioSetting, float volume)
         {
-            //Logger.LogMessage("Init volume " + audioSetting.AUDIO_NAME);
+            //MUPLogger.LogMessage("Init volume " + audioSetting.AUDIO_NAME);
             audioSetting.currentVolume = volume;
             audioSetting.defaultVolume = volume;
-            //Logger.LogMessage("Volume change to :" + audioSetting.currentVolume);
+            //MUPLogger.LogMessage("Volume change to :" + audioSetting.currentVolume);
         }
 
 
@@ -95,7 +95,7 @@ namespace MyUnityPackage.Toolkit
         private static void SetVolume(AudioSetting audioSetting, float volume)
         {
             if (AudioMixer == null) return;
-            //Logger.LogMessage("current  volume : " + audioSetting.currentVolume);
+            //MUPLogger.LogMessage("current  volume : " + audioSetting.currentVolume);
             if(audioSetting.currentVolume <= 0f && volume >= 0)
                 audioSetting.isMuted = false;
             else if(audioSetting.currentVolume >= 0f && volume <= 0)
@@ -103,7 +103,7 @@ namespace MyUnityPackage.Toolkit
 
             // Convert linear volume (0-1) to dB (-80 to 0)
             float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
-            //Logger.LogMessage(audioSetting.AUDIO_NAME+" " +dB);
+            //MUPLogger.LogMessage(audioSetting.AUDIO_NAME+" " +dB);
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
 
             audioSetting.currentVolume = volume;
@@ -149,7 +149,7 @@ namespace MyUnityPackage.Toolkit
         private static void ToggleMute(AudioSetting audioSetting)
         {
             if (AudioMixer == null) return;
-            //Logger.LogMessage("audioType: " + audioSetting.currentVolume);
+            //MUPLogger.LogMessage("audioType: " + audioSetting.currentVolume);
             float currentVolume;
             AudioMixer.GetFloat(audioSetting.AUDIO_NAME, out currentVolume);
 

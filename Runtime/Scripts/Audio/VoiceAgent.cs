@@ -19,7 +19,7 @@ namespace MyUnityPackage.Toolkit
             voiceManager = ServiceLocator.GetService<VoiceManager>();
             if (voiceManager == null)
             {
-                Logger.LogMessageError("VoiceAgent: VoiceManager not found in ServiceLocator");
+                MUPLogger.LogMessageError("VoiceAgent: VoiceManager not found in ServiceLocator");
                 enabled = false;
             }
         }

@@ -246,7 +246,7 @@ namespace MyUnityPackage.Toolkit
 
             if (www.result != UnityWebRequest.Result.Success)
             {
-                Logger.LogMessageError($"VoiceManager: Failed to load audio clip from {audioUrl}. Error: {www.error}");
+                MUPLogger.LogMessageError($"VoiceManager: Failed to load audio clip from {audioUrl}. Error: {www.error}");
                 yield break;
             }
 
