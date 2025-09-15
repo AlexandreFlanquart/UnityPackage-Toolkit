@@ -1,5 +1,25 @@
 # Toolkit package
-Package for Unity, Starter kit.
+
+## About
+Toolkit is a package that includes a collection of utility classes such as :
+* ServiceLocator
+* Custom Log class
+* Scene Loading 
+* Audio.
+
+## What's New
+To see the last update of the package check [here](CHANGELOG.md) !
+
+## How to Use
+
+1. <b>Service Locator</b></br>
+[Service Locator](https://www.geeksforgeeks.org/system-design/service-locator-pattern/) is a design pattern who use a central registry and who prevents you from using the Singleton pattern. [Docs](Docs/ServiceLocator.md)
+
+2. <b>MUPLogger</b></br>
+MUPLogger is a custom log class who will delete automatically some logs in the builds.[Docs](Docs/MUPLogger.md)
+
+
+3. <b>UI</b></br>
 
 <br>
 
