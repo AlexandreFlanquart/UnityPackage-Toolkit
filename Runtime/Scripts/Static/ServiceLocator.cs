@@ -10,7 +10,7 @@ namespace MyUnityPackage.Toolkit
         static Dictionary<Type, UnityEngine.Object> servicecontainer = null;
 
         /// <summary>
-        /// Find a service/script in current scene and return reference of it , Note: it will still find the service even if it's unactive
+        /// Find a service/script in current scene and return reference of it. Note: this will also locate inactive services.
         /// </summary>
         /// <typeparam name="T">Type of service to find</typeparam>
         /// <returns></returns>
@@ -118,7 +118,7 @@ namespace MyUnityPackage.Toolkit
         /// <returns></returns>
         static T FindService<T>(bool createObjectIfNotFound = false) where T : Object
         {
-            T type = GameObject.FindAnyObjectByType<T>();
+            T type = GameObject.FindAnyObjectByType<T>(FindObjectsInactive.Include);
             if (type != null)
             {
                 //If found add it to the dictonary
