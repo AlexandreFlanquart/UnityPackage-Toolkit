@@ -1,6 +1,8 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -99,9 +101,7 @@ namespace MyUnityPackage.Toolkit
                 #else
                     string audioUrl = Application.streamingAssetsPath + $"/Voices/{pKey}.mp3";
                 #endif
-                #if !UNITY_EDITOR
-                    StartCoroutine(AudioStreaming(audioUrl));
-                #endif
+                StartCoroutine(AudioStreaming(audioUrl));
                 return;
             }
             else
@@ -112,14 +112,8 @@ namespace MyUnityPackage.Toolkit
                     return;
                 }
 
-                string bundleName = $"{pKey}";
-                string path = $"Assets/Voices/{pKey}";
-                //#if UNITY_EDITOR
-                    AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-                //#elif UNITY_WEBGL
-                  //  AudioClip clip = ServiceLocator.GetService<AssetBundleManager>().GetAsset<AudioClip>(bundleName, path);
-                //#endif
-                
+                AudioClip clip = LoadAudioClip(pKey);
+
                 if (clip != null)
                 {
                     clipCache[pKey] = clip;
@@ -255,6 +249,22 @@ namespace MyUnityPackage.Toolkit
             {
                 PlayClip(clip);
             }
+        }
+
+        private AudioClip LoadAudioClip(string pKey)
+        {
+            AudioClip clip = null;
+#if UNITY_EDITOR
+            string editorPath = $"Assets/Voices/{pKey}";
+            clip = AssetDatabase.LoadAssetAtPath<AudioClip>(editorPath);
+#endif
+            if (clip == null)
+            {
+                string resourcesPath = $"Voices/{pKey}";
+                clip = Resources.Load<AudioClip>(resourcesPath) ?? Resources.Load<AudioClip>(pKey);
+            }
+
+            return clip;
         }
     }
 }
