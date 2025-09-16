@@ -65,7 +65,6 @@ namespace MyUnityPackage.Toolkit
         // Called when the volume slider value changes
         private void OnVolumeChanged(float value)
         {
-            float oldVolume = audioService.GetVolume(audioType);
             audioService.SetVolume(audioType, value);
             UpdateMuteImage();
             UpdateVolumeText(value);

@@ -30,7 +30,7 @@ namespace MyUnityPackage.Toolkit
         // Start is called before the first frame update
         void Awake()
         {
-            if (hideOnStart) Show(false); ;
+            if (hideOnStart) Show(false);
         }
 
         public void Show()
