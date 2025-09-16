@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace MyUnityPackage.Toolkit
 {
-    public class MUPLogger
+    public static class MUPLogger
     {
 
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
