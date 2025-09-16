@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace MyUnityPackage.Toolkit
     public static class UIManager
     {
         // Stores the mapping between UI component types and their instances (e.g., Canvas, custom UI scripts)
-        private static Dictionary<object, object> canvasUI = new Dictionary<object, object>(); // store type and component
+        private static Dictionary<Type, UnityEngine.Object> canvasUI = new Dictionary<Type, UnityEngine.Object>(); // store type and component
         // Stores all loaded transitions by name for quick access
         private static Dictionary<string, TransitionSO> transitions = new Dictionary<string, TransitionSO>();
 
@@ -34,7 +35,7 @@ namespace MyUnityPackage.Toolkit
         {
             //Init the dictionary
             if (canvasUI == null)
-                canvasUI = new Dictionary<object, object>();
+                canvasUI = new Dictionary<Type, UnityEngine.Object>();
 
             try
             {
@@ -45,12 +46,12 @@ namespace MyUnityPackage.Toolkit
                     if (cui == null) //The key exist but reference object doesn't exist anymore
                     {
                         canvasUI.Remove(typeof(T)); //Remove this key from the dictonary
-                        canvasUI.Add(typeof(T), go.GetComponent<T>());
+                        canvasUI.Add(typeof(T), (UnityEngine.Object)go.GetComponent<T>());
                     }
                 }
                 else
                 {
-                    canvasUI.Add(typeof(T), go.GetComponent<T>());
+                    canvasUI.Add(typeof(T), (UnityEngine.Object)go.GetComponent<T>());
                 }
             }
             catch
@@ -64,7 +65,7 @@ namespace MyUnityPackage.Toolkit
         {
             //Init the dictionary
             if (canvasUI == null)
-                canvasUI = new Dictionary<object, object>();
+                canvasUI = new Dictionary<Type, UnityEngine.Object>();
 
             try
             {
@@ -84,7 +85,7 @@ namespace MyUnityPackage.Toolkit
                 }
                 else
                 {
-                   MUPLogger.LogMessageWarningEditor("Can't find requested canvas UI");
+                    MUPLogger.LogMessageWarningEditor("Can't find requested canvas UI");
                     return null;
                 }
             }
@@ -111,7 +112,7 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-               MUPLogger.LogMessageWarningEditor("Transition not found: " + transitionName + " check if this transition is in resource folder");
+                MUPLogger.LogMessageWarningEditor("Transition not found: " + transitionName + " check if this transition is in resource folder");
             }
         }
         // Play a transition by triggering an Animator parameter on the given canvas
