@@ -34,7 +34,8 @@ namespace MyUnityPackage.Toolkit
                 slider.maxValue = 1f;
             }
             
-            if (isMuted)
+            var audioSettings = AudioManager.GetAudioSettingsFromAudioType(audioType);
+            if (audioSettings != null && isMuted != audioSettings.isMuted)
             {
                 AudioManager.ToggleMute(audioType);
             }
@@ -60,6 +61,8 @@ namespace MyUnityPackage.Toolkit
             AudioManager.SetVolume(audioType, audioSettingsSO.defaultVolume);
             UpdateVolumeText(audioSettingsSO.defaultVolume);
             UpdateMuteText(audioSettingsSO.defaultVolume);
+            isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
+            UpdateMuteImage();
         }
 
         // Called when the volume slider value changes
@@ -75,15 +78,18 @@ namespace MyUnityPackage.Toolkit
         {
             Debug.Log("OnMuteClicked");
             AudioManager.ToggleMute(audioType);
-
+            isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
             MUPLogger.LogMessage(audioType.ToString() + " isMuted: " + isMuted.ToString());
+
+            float currentVolume = AudioManager.GetVolume(audioType);
             if (slider != null)
             {
-                slider.value = AudioManager.GetVolume(audioType);
-                UpdateVolumeText(slider.value);
+                slider.value = currentVolume;
+                UpdateVolumeText(currentVolume);
             }
-            UpdateMuteText(slider.value);
-            
+            UpdateMuteText(currentVolume);
+            UpdateMuteImage();
+
         }
 
         // Updates the volume text UI to reflect the current value
