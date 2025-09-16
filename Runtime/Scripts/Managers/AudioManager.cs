@@ -46,12 +46,21 @@ namespace MyUnityPackage.Toolkit
         private static AudioSetting voiceSetting;
         private static Dictionary<AudioType, AudioSetting> audioSettings;
 
+        private static void EnsureInitialized()
+        {
+            if (audioSettings == null || musicSetting == null || sfxSetting == null || voiceSetting == null)
+            {
+                Initialize();
+            }
+        }
+
         // Default values
         private const float MIN_VOLUME = 0.0001f; // -80dB
         private const float MAX_VOLUME = 1f; // 0dB
 
         public static AudioSetting GetAudioSettingsFromAudioType(AudioType audioType)
         {
+            EnsureInitialized();
             return audioSettings[audioType];
         }
 
@@ -70,14 +79,16 @@ namespace MyUnityPackage.Toolkit
                 { AudioType.SFX, sfxSetting },
                 { AudioType.Voice, voiceSetting }
             };
-           
-            Debug.Log("Initialize" + AudioType.Music.ToString());
         }
         #endregion
 
         #region Volume Control Methods
 
-        public static void InitVolume(AudioType audioType, float volume) => InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
+        public static void InitVolume(AudioType audioType, float volume)
+        {
+            EnsureInitialized();
+            InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
+        }
         private static void InitVolume(AudioSetting audioSetting, float volume)
         {
             //MUPLogger.LogMessage("Init volume " + audioSetting.AUDIO_NAME);
@@ -126,19 +137,51 @@ namespace MyUnityPackage.Toolkit
 
         #region Public Volume Methods
         // Music Volume
-        public static void SetMusicVolume(float volume) => SetVolume(musicSetting, volume);
-        public static float GetMusicVolume() => GetVolume(musicSetting.AUDIO_NAME);
+        public static void SetMusicVolume(float volume)
+        {
+            EnsureInitialized();
+            SetVolume(musicSetting, volume);
+        }
+        public static float GetMusicVolume()
+        {
+            EnsureInitialized();
+            return GetVolume(musicSetting.AUDIO_NAME);
+        }
 
         // SFX Volume
-        public static void SetSFXVolume(float volume) => SetVolume(sfxSetting, volume);
-        public static float GetSFXVolume() => GetVolume(sfxSetting.AUDIO_NAME);
+        public static void SetSFXVolume(float volume)
+        {
+            EnsureInitialized();
+            SetVolume(sfxSetting, volume);
+        }
+        public static float GetSFXVolume()
+        {
+            EnsureInitialized();
+            return GetVolume(sfxSetting.AUDIO_NAME);
+        }
 
         // Voice Volume
-        public static void SetVoiceVolume(float volume) => SetVolume(voiceSetting, volume);
-        public static float GetVoiceVolume() => GetVolume(voiceSetting.AUDIO_NAME);
+        public static void SetVoiceVolume(float volume)
+        {
+            EnsureInitialized();
+            SetVolume(voiceSetting, volume);
+        }
+        public static float GetVoiceVolume()
+        {
+            EnsureInitialized();
+            return GetVolume(voiceSetting.AUDIO_NAME);
+        }
 
-        public static void SetVolume(AudioType audioType, float volume) => SetVolume(GetAudioSettingsFromAudioType(audioType), volume);
-        public static float GetVolume(AudioType audioType) => GetVolume(audioType.ToString());
+        public static void SetVolume(AudioType audioType, float volume)
+        {
+            EnsureInitialized();
+            SetVolume(GetAudioSettingsFromAudioType(audioType), volume);
+        }
+        public static float GetVolume(AudioType audioType)
+        {
+            EnsureInitialized();
+            return GetVolume(audioType.ToString());
+        }
         #endregion
 
         #region Mute Control Methods
@@ -167,7 +210,11 @@ namespace MyUnityPackage.Toolkit
             }
         }
 
-        public static void ToggleMute(AudioType audioType) => ToggleMute(GetAudioSettingsFromAudioType(audioType));
+        public static void ToggleMute(AudioType audioType)
+        {
+            EnsureInitialized();
+            ToggleMute(GetAudioSettingsFromAudioType(audioType));
+        }
 
         #endregion
     }
