@@ -1,60 +1,119 @@
-# Toolkit package
+# 🛠️ UnityPackage-Toolkit
 
-## About
-Toolkit is a package that includes a collection of utility classes such as :
-* ServiceLocator
-* Custom Log class
-* Scene Loading 
-* Audio.
+## 📋 Description
+**UnityPackage-Toolkit** est un package Unity complet qui fournit un ensemble d'outils essentiels pour démarrer rapidement un nouveau projet. Il inclut des systèmes d'audio avancés, de gestion d'interface utilisateur, de transitions animées, et bien plus encore.
 
-## What's New
-To see the last update of the package check [here](CHANGELOG.md) !
+Ce toolkit est conçu pour les développeurs qui souhaitent avoir une base solide et modulaire pour leurs projets Unity, avec des fonctionnalités prêtes à l'emploi et optimisées.
 
-## How to Use
+## 🚀 Fonctionnalités Principales
 
-1. <b>Service Locator</b></br>
-[Service Locator](https://www.geeksforgeeks.org/system-design/service-locator-pattern/) is a design pattern who use a central registry and who prevents you from using the Singleton pattern. [Docs](Docs/ServiceLocator.md)
+### 🎵 **Système Audio**
+- **AudioManager** : Gestion centralisée du volume et du mute (Music, SFX, Voice)
+- **VoiceManager** : Système de voix avec streaming audio et mise en cache
+- **AudioUpdater** : Mise à jour automatique des paramètres audio connectés à l'UI
+- **Support AudioMixer** : Intégration complète avec les AudioMixer Unity
 
-2. <b>MUPLogger</b></br>
-MUPLogger is a custom log class who will delete automatically some logs in the builds.[Docs](Docs/MUPLogger.md)
+### 🖥️ **Gestion d'Interface Utilisateur**
+- **UIManager** : Système de gestion centralisé des composants UI
+- **UI_Base** : Classe de base pour tous les éléments d'interface
+- **CanvasHelper** : Assistant pour la gestion des Canvas
+- **Système de transitions** : Animations de transition personnalisables
 
+### 🎬 **Système de Transitions**
+- **TransitionSO** : ScriptableObjects pour définir des transitions
+- **AnimationFadeTransitionSO** : Transitions de fondu avec animations
+- **CustomTransitionSO** : Transitions personnalisées
+- **Support Animator** : Intégration avec le système d'animation Unity
 
-3. <b>UI</b></br>
+### 🌍 **Multilingue**
+- **LanguageSwitcher** : Changement de langue en temps réel
+- **Support I2Localization** : Intégration avec I2 Localization
+- **Interface Toggle** : Contrôles UI pour le changement de langue
 
-<br>
+### 🏗️ **Architecture de Services**
+- **ServiceLocator** : Pattern de localisation de services avec cache
+- **Gestion automatique** : Détection et création automatique de services
+- **Support inactif** : Localisation même des objets inactifs
 
-## 📦 How to install in Unity
-This guide explains how to install this Unity package using the **Unity Package Manager**.
+### 🎮 **Chargement de Scènes**
+- **SceneLoader** : Chargement asynchrone de scènes multiples
+- **Gestion additive** : Support du chargement/déchargement de scènes
+- **Événements** : Système d'événements pour le suivi du chargement
 
-### 🔹 1. Open the Package Manager
-1. In Unity, go to the **top menu**.
-2. Click **Window > Package Manager**.
-3. The **Package Manager** window will open, showing the list of installed packages.
+### 🛠️ **Utilitaires**
+- **Logger** : Système de logging personnalisé et optimisé
+- **ScriptableObjects** : Configuration via assets (AudioSettings, Transitions)
+- **Gestion des ressources** : Chargement optimisé depuis Resources et StreamingAssets
 
-### 🔹 2. Add the Git Package
-1. In the **Package Manager**, click the **➕** button (top left corner).
-2. Select **"Add package from git URL..."**.
-3. Enter the following Git repository URL: <br>
+## 📦 Installation
+
+### 🔹 1. Ouvrir le Package Manager
+1. Dans Unity, allez dans le **menu supérieur**
+2. Cliquez sur **Window > Package Manager**
+3. La fenêtre **Package Manager** s'ouvrira
+
+### 🔹 2. Ajouter le Package Git
+1. Dans le **Package Manager**, cliquez sur le bouton **➕** (coin supérieur gauche)
+2. Sélectionnez **"Add package from git URL..."**
+3. Entrez l'URL du repository Git : <br>
+   ```
    https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git
-4. Click **"Add"**, and Unity will download and install the package.
+   ```
+4. Cliquez sur **"Add"**, Unity téléchargera et installera le package
 
-### 🔹 3. Install a Specific Version (Optional)
-If you want to install a specific release, **append the tag** at the end of the URL: <br>
-https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git#v1.0.0
+### 🔹 3. Installer une Version Spécifique (Optionnel)
+Pour installer une version spécifique, **ajoutez le tag** à la fin de l'URL : <br>
+```
+https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git#v1.0.2
+```
 
-This ensures you get the exact version you need.
+## 📚 Utilisation Rapide
 
-### 🔹 4. That's it! ✅
-Your package is now installed and ready to use in your Unity project. 🎮🚀
+### ServiceLocator
+```csharp
+// Récupérer un service
+var audioManager = ServiceLocator.GetService<AudioManager>();
 
-<br>
+// Ajouter un service
+ServiceLocator.AddService<MyService>(gameObject);
+```
 
-## 🛠️ Troubleshouting
-If there is an issue, report it to a dev.
+### AudioManager
+```csharp
+// Contrôler le volume
+AudioManager.SetMusicVolume(0.8f);
+AudioManager.SetSFXVolume(0.6f);
 
+// Basculer le mute
+AudioManager.ToggleMute(AudioManager.AudioType.Music);
+```
 
-# Attribution
+### UIManager
+```csharp
+// Enregistrer un composant UI
+UIManager.AddCanvasUI<Canvas>(gameObject);
 
-Images
-PixelPerfect :https://www.flaticon.com/free-icon/volume_727269?term=unmute&page=1&position=5&origin=search&related_id=727269
-Mayor Icons : https://www.flaticon.com/free-icon/volume-mute_4546899?term=unmute&page=1&position=6&origin=search&related_id=4546899
+// Récupérer un composant UI
+var canvas = UIManager.GetCanvasUI<Canvas>();
+
+// Jouer une transition
+UIManager.PlayTransitionByName(canvas, "FadeIn");
+```
+
+## 📋 Changelog
+Pour voir les dernières mises à jour du package, consultez [ici](CHANGELOG.md) !
+
+## 🎯 Exemples
+Le package inclut des exemples complets dans le dossier `Samples~` :
+- Prefabs d'interface utilisateur
+- Scènes d'exemple
+- Animations de transition
+- Scripts de démonstration
+
+## 🛠️ Dépannage
+Si vous rencontrez un problème, signalez-le à l'équipe de développement.
+
+## 📄 Attribution
+- **Images** : 
+  - PixelPerfect : https://www.flaticon.com/free-icon/volume_727269
+  - Mayor Icons : https://www.flaticon.com/free-icon/volume-mute_4546899

@@ -79,7 +79,7 @@ namespace MyUnityPackage.Toolkit
             Debug.Log("OnMuteClicked");
             AudioManager.ToggleMute(audioType);
             isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
-            MUPLogger.LogMessage(audioType.ToString() + " isMuted: " + isMuted.ToString());
+            MUPLogger.Info(audioType.ToString() + " isMuted: " + isMuted.ToString());
 
             float currentVolume = AudioManager.GetVolume(audioType);
             if (slider != null)

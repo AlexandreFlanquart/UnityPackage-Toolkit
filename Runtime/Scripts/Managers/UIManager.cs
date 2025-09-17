@@ -31,7 +31,7 @@ namespace MyUnityPackage.Toolkit
         }
 
         // Register a UI component of type T from the given GameObject
-        public static void AddCanvasUI<T>(GameObject go) where T : Object
+        public static void AddCanvasUI<T>(GameObject go) where T : UnityEngine.Object
         {
             //Init the dictionary
             if (canvasUI == null)
@@ -61,7 +61,7 @@ namespace MyUnityPackage.Toolkit
         }
 
         // Retrieve a registered UI component of type T
-        public static T GetCanvasUI<T>() where T : Object
+        public static T GetCanvasUI<T>() where T : UnityEngine.Object
         {
             //Init the dictionary
             if (canvasUI == null)
@@ -85,7 +85,7 @@ namespace MyUnityPackage.Toolkit
                 }
                 else
                 {
-                    MUPLogger.LogMessageWarningEditor("Can't find requested canvas UI");
+                    MUPLogger.Warning("Can't find requested canvas UI");
                     return null;
                 }
             }
@@ -98,7 +98,7 @@ namespace MyUnityPackage.Toolkit
         // Play a transition animation on the given canvas using a TransitionSO
         private static void PlayTransition(GameObject canvas, TransitionSO transition)
         {
-            MUPLogger.LogMessage("PlayTransition : " + transition.transitionName + " at canvas : " + canvas.name);
+            MUPLogger.Info("PlayTransition : " + transition.transitionName + " at canvas : " + canvas.name);
             // Play the transition
             transition.PlayTransition(canvas);
         }
@@ -112,7 +112,7 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-                MUPLogger.LogMessageWarningEditor("Transition not found: " + transitionName + " check if this transition is in resource folder");
+                MUPLogger.Warning("Transition not found: " + transitionName + " check if this transition is in resource folder");
             }
         }
         // Play a transition by triggering an Animator parameter on the given canvas
@@ -124,7 +124,7 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-                MUPLogger.LogMessageWarningEditor("Animator not found: " + canvas.name);
+                MUPLogger.Warning("Animator not found: " + canvas.name);
             }
         }
        

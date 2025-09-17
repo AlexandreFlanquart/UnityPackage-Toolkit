@@ -3,9 +3,9 @@
 void Start()
 {
    //will log only in the editor
-   MUPLogger.LogMessageEditor("Editor");
+   MUPLogger.InfoEditor("Editor");
    //Will log in editor and builds
-   MUPLogger.LogMessage("Anywhere");
+   MUPLogger.Info("Anywhere");
 }
 
 ```

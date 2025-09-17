@@ -6,108 +6,96 @@ namespace MyUnityPackage.Toolkit
 {
     public static class ServiceLocator
     {
-        //Hold Reference to all found services as type as key , and reference to the concerete object
-        static Dictionary<Type, UnityEngine.Object> servicecontainer = null;
+        // Cache services by their concrete type so we only perform the expensive scene lookup once per service.
+        static readonly Dictionary<Type, Component> servicecontainer = new Dictionary<Type, Component>();
 
         /// <summary>
         /// Find a service/script in current scene and return reference of it. Note: this will also locate inactive services.
         /// </summary>
         /// <typeparam name="T">Type of service to find</typeparam>
-        /// <returns></returns>
-        public static T GetService<T>(bool createObjectIfNotFound = false) where T : Object
+        public static T GetService<T>(bool createObjectIfNotFound = false) where T : Component
         {
-            //Init the dictionary
-            if (servicecontainer == null)
-                servicecontainer = new Dictionary<Type, UnityEngine.Object>();
+            var serviceType = typeof(T);
 
-            try
+            if (servicecontainer.TryGetValue(serviceType, out var cached))
             {
-                //Check if the key exist in the dictionary
-                if (servicecontainer.ContainsKey(typeof(T)))
+                if (cached != null)
                 {
-                    T service = (T)servicecontainer[typeof(T)];
-                    if (service != null) //If Key exist and the object it reference to still exist
-                    {
-                        return service;
-                    }
-                    else //The key exist but reference object doesn't exist anymore
-                    {
-                        servicecontainer.Remove(typeof(T)); //Remove this key from the dictonary
-                        return FindService<T>(createObjectIfNotFound); //Try and find the service in current scene
-                    }
+                    return (T)cached;
                 }
-                else
-                {
-                    return FindService<T>(createObjectIfNotFound);
-                }
+
+                servicecontainer.Remove(serviceType);
+                MUPLogger.Info($"ServiceLocator removed stale reference of type {serviceType.Name}.");
             }
-            catch
+
+            var located = FindService<T>(createObjectIfNotFound);
+            if (located != null)
             {
-                throw new System.InvalidOperationException($"Can't find requested service of type {typeof(T).Name}, and create new one is set to {createObjectIfNotFound}");
+                return located;
             }
+
+            var message = $"ServiceLocator couldn't find service of type {serviceType.Name} (auto-create set to {createObjectIfNotFound}).";
+            Debug.LogError(message);
+            throw new InvalidOperationException(message);
         }
-
 
         /// <summary>
         /// Add a service/script
         /// </summary>
         /// <typeparam name="T">Type of service to add</typeparam>
         /// <param name="go">GameObject of service to add</param>
-        public static void AddService<T>(GameObject go) where T : Object
+        /// <param name="replaceExisting">Allows replacing an existing registered service.</param>
+        public static void AddService<T>(GameObject go, bool replaceExisting = false) where T : Component
         {
-            //Init the dictionary
-            if (servicecontainer == null)
-                servicecontainer = new Dictionary<Type, UnityEngine.Object>();
+            if (go == null)
+            {
+                throw new ArgumentNullException(nameof(go));
+            }
 
-            try
+            var serviceType = typeof(T);
+            var component = go.GetComponent<T>();
+            if (component == null)
             {
-                //Check if the key exist in the dictionary
-                if (servicecontainer.ContainsKey(typeof(T)))
-                {
-                    T service = (T)servicecontainer[typeof(T)];
-                    if (service == null) //The key exist but reference object doesn't exist anymore
-                    {
-                        servicecontainer.Remove(typeof(T)); //Remove this key from the dictonary
-                        servicecontainer.Add(typeof(T), (UnityEngine.Object)go.GetComponent<T>());
-                    }
-                }
-                else
-                {
-                    servicecontainer.Add(typeof(T), (UnityEngine.Object)go.GetComponent<T>());
-                }
+                var message = $"ServiceLocator cannot register type {serviceType.Name}: the provided GameObject '{go.name}' has no such component.";
+                Debug.LogError(message, go);
+                throw new InvalidOperationException(message);
             }
-            catch
+
+            if (servicecontainer.TryGetValue(serviceType, out var existing) && existing != null && !replaceExisting)
             {
-                throw new System.InvalidOperationException($"The requested service of type {typeof(T).Name} is already referenced");
+                var message = $"ServiceLocator already contains a reference for type {serviceType.Name}. Pass replaceExisting=true to overwrite.";
+                Debug.LogError(message, existing);
+                throw new InvalidOperationException(message);
             }
+
+            if (existing != null && replaceExisting)
+            {
+                Debug.LogWarning($"ServiceLocator replaced existing service of type {serviceType.Name}.", existing);
+            }
+
+            servicecontainer[serviceType] = component;
         }
 
         /// <summary>
         /// Check if a service is already referenced
         /// </summary>
         /// <returns>If a service is already referenced</returns>
-        public static bool Exists<T>() where T : Object
+        public static bool Exists<T>() where T : Component
         {
-            //Init the dictionary
-            if (servicecontainer == null)
-                servicecontainer = new Dictionary<Type, UnityEngine.Object>();
+            var serviceType = typeof(T);
+            if (!servicecontainer.TryGetValue(serviceType, out var cached))
+            {
+                return false;
+            }
 
-            try
+            if (cached != null)
             {
-                //Check if the key exist in the dictionary
-                if (servicecontainer.ContainsKey(typeof(T)))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return true;
             }
-            catch
-            {
-                throw new System.InvalidOperationException("An error has occurred while checking service existence.");
-            }
+
+            servicecontainer.Remove(serviceType);
+            Debug.LogWarning($"ServiceLocator removed stale reference while checking existence for type {serviceType.Name}.");
+            return false;
         }
 
         /// <summary>
@@ -115,27 +103,59 @@ namespace MyUnityPackage.Toolkit
         /// </summary>
         /// <typeparam name="T">Type to look for</typeparam>
         /// <param name="createObjectIfNotFound">Either create a gameobject with type if not exist</param>
-        /// <returns></returns>
-        static T FindService<T>(bool createObjectIfNotFound = false) where T : Object
+        static T FindService<T>(bool createObjectIfNotFound = false) where T : Component
         {
-            T type = GameObject.FindAnyObjectByType<T>(FindObjectsInactive.Include);
-            if (type != null)
+            var serviceType = typeof(T);
+
+            if (servicecontainer.TryGetValue(serviceType, out var cached) && cached != null)
             {
-                //If found add it to the dictonary
-                servicecontainer.Add(typeof(T), (UnityEngine.Object)type);
+                return (T)cached;
             }
-            else if (createObjectIfNotFound)
+
+            var located = GameObject.FindAnyObjectByType<T>(FindObjectsInactive.Include);
+            if (located != null)
             {
-                //If not found and set to create new gameobject , create a new gameobject and add the type to it
-                GameObject go = new GameObject(typeof(T).Name, typeof(T));
-                servicecontainer.Add(typeof(T), (UnityEngine.Object)go.GetComponent<T>());
+                servicecontainer[serviceType] = located;
+                return located;
             }
-            return (T)servicecontainer[typeof(T)];
+
+            if (!createObjectIfNotFound)
+            {
+                return null;
+            }
+
+            if (serviceType.IsAbstract)
+            {
+                var message = $"ServiceLocator cannot auto-create abstract service type {serviceType.Name}.";
+                Debug.LogError(message);
+                throw new InvalidOperationException(message);
+            }
+
+            var go = new GameObject(serviceType.Name);
+            try
+            {
+                var component = go.AddComponent<T>();
+                servicecontainer[serviceType] = component;
+                Debug.LogWarning($"ServiceLocator auto-created missing service of type {serviceType.Name}.", component);
+                return component;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"ServiceLocator failed to auto-create service of type {serviceType.Name}: {exception.Message}");
+                UnityEngine.Object.Destroy(go);
+                throw;
+            }
         }
 
         public static void Clear()
         {
-            servicecontainer?.Clear();
+            if (servicecontainer.Count == 0)
+            {
+                return;
+            }
+
+            servicecontainer.Clear();
+            Debug.LogWarning("ServiceLocator cache cleared.");
         }
     }
 }
