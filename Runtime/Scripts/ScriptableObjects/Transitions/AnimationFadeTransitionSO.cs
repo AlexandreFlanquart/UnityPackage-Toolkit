@@ -11,9 +11,9 @@ namespace MyUnityPackage.Toolkit
     {
         public override Task PlayTransition(GameObject target)
         {
-            Debug.Log("Play animation TransitionTestSO");
+            MUPLogger.Info("Play animation TransitionTestSO");
             base.PlayTransition(target);
-            Debug.Log("TransitionTestSO finished");
+            MUPLogger.Info("TransitionTestSO finished");
             // Add custom logic
             // For example, wait for the animation to finish
             return Task.CompletedTask;

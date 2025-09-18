@@ -16,7 +16,7 @@ namespace MyUnityPackage.Toolkit
 
         private void OnButtonBackClick()
         {
-            Debug.Log("OnButtonBackClick");
+            MUPLogger.Info("OnButtonBackClick");
             UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Game>().gameObject, "FadeOut");
             UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Menu>().gameObject, "FadeIn");
         }

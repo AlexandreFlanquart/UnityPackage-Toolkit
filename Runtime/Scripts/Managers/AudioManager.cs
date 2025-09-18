@@ -22,6 +22,7 @@ namespace MyUnityPackage.Toolkit
             public float currentVolume;
             public float beforeMutedVolume;
             public bool isMuted;
+            public AudioSettingsSO settingsSO; // Référence au SO
         }
 
         private static AudioMixer _audioMixer;
@@ -34,7 +35,7 @@ namespace MyUnityPackage.Toolkit
                     _audioMixer = Resources.Load<AudioMixer>("AudioMixer");
                     if (_audioMixer == null)
                     {
-                        Debug.LogError("AudioMixer not found in Resources folder. Please ensure it exists at 'Resources/AudioMixer'");
+                        MUPLogger.Error("AudioMixer not found in Resources folder. Please ensure it exists at 'Resources/AudioMixer'");
                     }
                 }
                 return _audioMixer;
@@ -79,6 +80,38 @@ namespace MyUnityPackage.Toolkit
                 { AudioType.SFX, sfxSetting },
                 { AudioType.Voice, voiceSetting }
             };
+            LoadAndApplyAudioSettingsSO();
+        }
+
+        private static void LoadAndApplyAudioSettingsSO()
+        {
+            MUPLogger.Info("LoadAndApplyAudioSettingsSO");
+            var musicSO = Resources.Load<AudioSettingsSO>("AudioSettings/MusicSettingsSO");
+            var sfxSO = Resources.Load<AudioSettingsSO>("AudioSettings/SFXSettingsSO");
+            var voiceSO = Resources.Load<AudioSettingsSO>("AudioSettings/VoiceSettingsSO");
+
+            if (musicSO != null)
+            {
+                MUPLogger.Info("MusicSettingsSO loaded");
+                musicSetting.settingsSO = musicSO;
+                SetVolume(AudioType.Music, musicSO.defaultVolume);
+            }
+            if (sfxSO != null)
+            {
+                sfxSetting.settingsSO = sfxSO;
+                SetVolume(AudioType.SFX, sfxSO.defaultVolume);
+            }
+            if (voiceSO != null)
+            {
+                voiceSetting.settingsSO = voiceSO;
+                SetVolume(AudioType.Voice, voiceSO.defaultVolume);
+            }
+        }
+
+        // Méthodes d'accès aux SO
+        public static AudioSettingsSO GetAudioSettingsSO(AudioType audioType)
+        {
+            return GetAudioSettingsFromAudioType(audioType).settingsSO;
         }
         #endregion
 
@@ -89,14 +122,13 @@ namespace MyUnityPackage.Toolkit
             EnsureInitialized();
             InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
         }
+
         private static void InitVolume(AudioSetting audioSetting, float volume)
         {
-            //MUPLogger.Info("Init volume " + audioSetting.AUDIO_NAME);
+            MUPLogger.Info("Init volume " + audioSetting.AUDIO_NAME);
             audioSetting.currentVolume = volume;
             audioSetting.defaultVolume = volume;
-            //MUPLogger.Info("Volume change to :" + audioSetting.currentVolume);
         }
-
 
         /// <summary>
         /// Sets the volume for a specific audio group
@@ -105,8 +137,8 @@ namespace MyUnityPackage.Toolkit
         /// <param name="volume">Volume value between 0 and 1</param>
         private static void SetVolume(AudioSetting audioSetting, float volume)
         {
+            MUPLogger.Info("Set volume " + audioSetting.AUDIO_NAME + " to " + volume);
             if (AudioMixer == null) return;
-            //MUPLogger.Info("current  volume : " + audioSetting.currentVolume);
             if(audioSetting.currentVolume <= 0f && volume >= 0)
                 audioSetting.isMuted = false;
             else if(audioSetting.currentVolume >= 0f && volume <= 0)
@@ -114,9 +146,8 @@ namespace MyUnityPackage.Toolkit
 
             // Convert linear volume (0-1) to dB (-80 to 0)
             float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
-            //MUPLogger.Info(audioSetting.AUDIO_NAME+" " +dB);
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
-
+            
             audioSetting.currentVolume = volume;
         }
 
@@ -216,6 +247,13 @@ namespace MyUnityPackage.Toolkit
             ToggleMute(GetAudioSettingsFromAudioType(audioType));
         }
 
+        // Retourne la sprite mute/unmute selon l'état courant
+        public static Sprite GetMuteSprite(AudioType audioType)
+        {
+            var setting = GetAudioSettingsFromAudioType(audioType);
+            if (setting.settingsSO == null) return null;
+            return setting.isMuted ? setting.settingsSO.mutedImage : setting.settingsSO.unmutedImage;
+        }
         #endregion
     }
 }

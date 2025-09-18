@@ -1,3 +1,3 @@
-## [1.0.2] - 2025-07-11
+## [1.0.3] - 2025-09-18
 ### New Release
-- Fix samples
+- Clear project & add docs

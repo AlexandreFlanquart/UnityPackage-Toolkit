@@ -32,9 +32,6 @@ namespace MyUnityPackage.Toolkit
         // Enable/disable timestamp in logs
         public static bool IncludeTimestamp = false;
 
-        // Enable/disable editor-only logs in builds
-        public static bool EditorOnlyLogsEnabled = true;
-
         #region Core Logging Methods
 
         /// <summary>
@@ -62,14 +59,14 @@ namespace MyUnityPackage.Toolkit
             {
                 case LogLevel.Debug:
                 case LogLevel.Info:
-                    if (context != null) UnityEngine.Debug.Log(formattedMessage, context); else UnityEngine.Debug.Log(formattedMessage);
+                    if (context != null) Debug.Log(formattedMessage, context); else Debug.Log(formattedMessage);
                     break;
                 case LogLevel.Warning:
-                    if (context != null) UnityEngine.Debug.LogWarning(formattedMessage, context); else UnityEngine.Debug.LogWarning(formattedMessage);
+                    if (context != null) Debug.LogWarning(formattedMessage, context); else Debug.LogWarning(formattedMessage);
                     break;
                 case LogLevel.Error:
                 case LogLevel.Exception: // Simplified: treat Exception as an error message
-                    if (context != null) UnityEngine.Debug.LogError(formattedMessage, context); else UnityEngine.Debug.LogError(formattedMessage);
+                    if (context != null) Debug.LogError(formattedMessage, context); else Debug.LogError(formattedMessage);
                     break;
             }
         }

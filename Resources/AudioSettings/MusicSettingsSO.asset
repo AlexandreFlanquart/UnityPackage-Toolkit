@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0e37973dd95323a4c8fadb634433eedf, type: 3}
-  m_Name: SFXSettings
+  m_Name: MusicSettingsSO
   m_EditorClassIdentifier: 
-  defaultVolume: 0.3
+  defaultVolume: 0.4
   mutedImage: {fileID: 21300000, guid: 6062d04f0d7fb4f4088ad2592605972d, type: 3}
   unmutedImage: {fileID: 21300000, guid: 1fc72f3ee0c063d448aee868bbb2915b, type: 3}

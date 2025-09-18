@@ -31,7 +31,6 @@ namespace MyUnityPackage.Toolkit
 
             // Replace the target clip
             overrides[0] = new KeyValuePair<AnimationClip, AnimationClip>(overrides[0].Key, _animationClip);
-            Debug.LogWarning("overrides.Count! " + overrides.Count);
 
             // Apply overrides
             overrideController.ApplyOverrides(overrides);

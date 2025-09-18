@@ -1,6 +1,6 @@
 {
   "name": "com.myunitypackage.toolkit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "displayName": "UnityPackage-Toolkit",
   "description": "Unity Toolkit is starter kit to begin a new project.",
   "unity": "6000.0",

@@ -14,14 +14,16 @@ namespace MyUnityPackage.Toolkit
         [SerializeField] private Slider slider;
         [SerializeField] private TextMeshProUGUI muteText;
         [SerializeField] private bool isMuted;
-        [SerializeField] private AudioSettingsSO audioSettingsSO;
 
         // Reference to the audio service interface. Can be injected for testing or replaced with another implementation.
         private IAudioService audioService;
 
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
-        //public void Start()
-        public void Initialize()
+        void Awake()
+        {
+            Initialize();
+        }
+
+        private void Initialize()
         {
             // If no audio service has been injected, use the default implementation
             if (audioService == null)
@@ -33,7 +35,7 @@ namespace MyUnityPackage.Toolkit
                 slider.minValue = 0f;
                 slider.maxValue = 1f;
             }
-            
+
             var audioSettings = AudioManager.GetAudioSettingsFromAudioType(audioType);
             if (audioSettings != null && isMuted != audioSettings.isMuted)
             {
@@ -56,11 +58,10 @@ namespace MyUnityPackage.Toolkit
         // Initializes the volume UI and audio settings based on the provided AudioSettingsSO
         public void InitVolumeUpdater()
         {
-            AudioManager.InitVolume(audioType, audioSettingsSO.defaultVolume);
-            slider.value = audioSettingsSO.defaultVolume;
-            AudioManager.SetVolume(audioType, audioSettingsSO.defaultVolume);
-            UpdateVolumeText(audioSettingsSO.defaultVolume);
-            UpdateMuteText(audioSettingsSO.defaultVolume);
+            float volume = AudioManager.GetVolume(audioType);
+            slider.value = volume;
+            UpdateVolumeText(volume);
+            UpdateMuteText(volume);
             isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
             UpdateMuteImage();
         }
@@ -76,7 +77,7 @@ namespace MyUnityPackage.Toolkit
         // Called when the mute button is clicked
         private void OnMuteClicked()
         {
-            Debug.Log("OnMuteClicked");
+            MUPLogger.Info("OnMuteClicked");
             AudioManager.ToggleMute(audioType);
             isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
             MUPLogger.Info(audioType.ToString() + " isMuted: " + isMuted.ToString());
@@ -114,11 +115,7 @@ namespace MyUnityPackage.Toolkit
         private void UpdateMuteImage()
         {
             if (muteButton == null) return;
-
-            if (AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted)
-                muteButton.image.sprite = audioSettingsSO.mutedImage;
-            else
-                muteButton.image.sprite = audioSettingsSO.unmutedImage;
+            muteButton.image.sprite = AudioManager.GetMuteSprite(audioType);
         }
     }
 }

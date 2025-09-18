@@ -35,7 +35,7 @@ namespace MyUnityPackage.Toolkit
             }
 
             var message = $"ServiceLocator couldn't find service of type {serviceType.Name} (auto-create set to {createObjectIfNotFound}).";
-            Debug.LogError(message);
+            MUPLogger.Error(message);
             throw new InvalidOperationException(message);
         }
 
@@ -57,20 +57,20 @@ namespace MyUnityPackage.Toolkit
             if (component == null)
             {
                 var message = $"ServiceLocator cannot register type {serviceType.Name}: the provided GameObject '{go.name}' has no such component.";
-                Debug.LogError(message, go);
+                MUPLogger.Error(message, go);
                 throw new InvalidOperationException(message);
             }
 
             if (servicecontainer.TryGetValue(serviceType, out var existing) && existing != null && !replaceExisting)
             {
                 var message = $"ServiceLocator already contains a reference for type {serviceType.Name}. Pass replaceExisting=true to overwrite.";
-                Debug.LogError(message, existing);
+                MUPLogger.Error(message, existing);
                 throw new InvalidOperationException(message);
             }
 
             if (existing != null && replaceExisting)
             {
-                Debug.LogWarning($"ServiceLocator replaced existing service of type {serviceType.Name}.", existing);
+                MUPLogger.Warning($"ServiceLocator replaced existing service of type {serviceType.Name}.", existing);
             }
 
             servicecontainer[serviceType] = component;
@@ -94,7 +94,7 @@ namespace MyUnityPackage.Toolkit
             }
 
             servicecontainer.Remove(serviceType);
-            Debug.LogWarning($"ServiceLocator removed stale reference while checking existence for type {serviceType.Name}.");
+            MUPLogger.Warning($"ServiceLocator removed stale reference while checking existence for type {serviceType.Name}.");
             return false;
         }
 
@@ -127,7 +127,7 @@ namespace MyUnityPackage.Toolkit
             if (serviceType.IsAbstract)
             {
                 var message = $"ServiceLocator cannot auto-create abstract service type {serviceType.Name}.";
-                Debug.LogError(message);
+                MUPLogger.Error(message);
                 throw new InvalidOperationException(message);
             }
 
@@ -136,12 +136,12 @@ namespace MyUnityPackage.Toolkit
             {
                 var component = go.AddComponent<T>();
                 servicecontainer[serviceType] = component;
-                Debug.LogWarning($"ServiceLocator auto-created missing service of type {serviceType.Name}.", component);
+                MUPLogger.Warning($"ServiceLocator auto-created missing service of type {serviceType.Name}.", component);
                 return component;
             }
             catch (Exception exception)
             {
-                Debug.LogError($"ServiceLocator failed to auto-create service of type {serviceType.Name}: {exception.Message}");
+                MUPLogger.Error($"ServiceLocator failed to auto-create service of type {serviceType.Name}: {exception.Message}");
                 UnityEngine.Object.Destroy(go);
                 throw;
             }
@@ -155,7 +155,7 @@ namespace MyUnityPackage.Toolkit
             }
 
             servicecontainer.Clear();
-            Debug.LogWarning("ServiceLocator cache cleared.");
+            MUPLogger.Warning("ServiceLocator cache cleared.");
         }
     }
 }

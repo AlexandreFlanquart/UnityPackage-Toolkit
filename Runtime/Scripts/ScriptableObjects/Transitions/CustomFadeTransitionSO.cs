@@ -13,7 +13,7 @@ namespace MyUnityPackage.Toolkit
 
         protected override async Task OnCustomTransition(GameObject target)
         {
-            Debug.Log("Play custom FadeTransitionSO");
+            MUPLogger.Info("Play custom FadeTransitionSO");
             // Example of a custom fade transition
             var canvasGroup = target.GetComponent<CanvasGroup>();
             if (canvasGroup == null)

@@ -30,7 +30,7 @@ namespace MyUnityPackage.Toolkit
         public void SetLanguage(string languageName)
         {
             LocalizationManager.CurrentLanguage = languageName;
-            Debug.Log("Language changed to " + languageName);
+            MUPLogger.Info("Language changed to " + languageName);
         }
         #endif
     }

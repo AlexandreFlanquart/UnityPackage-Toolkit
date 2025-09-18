@@ -1,5 +1,4 @@
 using UnityEngine;
-using MyUnityPackage.Toolkit;
 
 namespace MyUnityPackage.Toolkit
 {
@@ -13,23 +12,16 @@ namespace MyUnityPackage.Toolkit
         private void SetupGame()
         {
             AudioManager.Initialize();
-
-            AudioUpdater[] audioUpdatersList = FindObjectsByType<AudioUpdater>(FindObjectsInactive.Include ,FindObjectsSortMode.None);
-            foreach (AudioUpdater audioUpdater in audioUpdatersList)
-            {
-                audioUpdater.Initialize(); 
-            }
-                
         }
 
         public void StartGame()
         {
-            Debug.Log("StartGame");
+            MUPLogger.Info("StartGame");
         }
 
         public void EndGame()
         {
-            Debug.Log("EndGame");   
+            MUPLogger.Info("EndGame");   
         }
     }
 }
