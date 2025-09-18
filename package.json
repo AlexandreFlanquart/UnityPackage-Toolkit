@@ -13,12 +13,13 @@
     "name": "Victor Simon"
     }
   ],
-  "changelogUrl": "https://github.com/AlexandreFlanquart/UnityPackage-Toolkit/releases/tag/v1.0.1",
   "samples": [
     {
       "displayName": "Sample",
       "description": "Example usage",
       "path": "Samples~"
     }
-  ]
+  ],
+  "documentationUrl": "https://github.com/AlexandreFlanquart/UnityPackage-Toolkit/tree/main/Docs",
+  "changelogUrl": "https://github.com/AlexandreFlanquart/UnityPackage-Toolkit/blob/main/CHANGELOG.md"
 }
