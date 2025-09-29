@@ -24,7 +24,7 @@ namespace MyUnityPackage.Toolkit
         public static bool Enabled = true;
 
         // Minimum level to output.
-        public static LogLevel MinimumLevel = LogLevel.Info;
+        public static LogLevel MinimumLevel = LogLevel.Debug;
 
         // Global prefix for all logs
         public static string GlobalPrefix = "[MUP]";
