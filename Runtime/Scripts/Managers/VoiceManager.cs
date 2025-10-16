@@ -47,6 +47,7 @@ namespace MyUnityPackage.Toolkit
         // Clean up cached audio clips when destroyed
         void OnDestroy()
         {
+            ServiceLocator.RemoveService<VoiceManager>(this);
             ClearCache();
         }
 
@@ -228,15 +229,21 @@ namespace MyUnityPackage.Toolkit
         private IEnumerator AudioStreaming(string audioUrl)
         {
             using UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(audioUrl, AudioType.MPEG);
-            DownloadHandlerAudioClip dHA = new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG);
-            dHA.streamAudio = true;
-            www.downloadHandler = dHA;
-            www.SendWebRequest();
 
-            while (!www.isDone)
+            if (www.downloadHandler is DownloadHandlerAudioClip downloadHandler)
             {
-                yield return new WaitForSeconds(.1f);
+                downloadHandler.streamAudio = true;
             }
+            else
+            {
+                var handler = new DownloadHandlerAudioClip(audioUrl, AudioType.MPEG)
+                {
+                    streamAudio = true
+                };
+                www.downloadHandler = handler;
+            }
+
+            yield return www.SendWebRequest();
 
             if (www.result != UnityWebRequest.Result.Success)
             {

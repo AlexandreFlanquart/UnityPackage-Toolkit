@@ -35,11 +35,9 @@ namespace MyUnityPackage.Toolkit
                 slider.minValue = 0f;
                 slider.maxValue = 1f;
             }
-
-            var audioSettings = AudioManager.GetAudioSettingsFromAudioType(audioType);
-            if (audioSettings != null && isMuted != audioSettings.isMuted)
+            else
             {
-                AudioManager.ToggleMute(audioType);
+                MUPLogger.Error($"AudioUpdater on '{name}' is missing a Slider reference.");
             }
 
             if (muteButton != null)
@@ -58,19 +56,28 @@ namespace MyUnityPackage.Toolkit
         // Initializes the volume UI and audio settings based on the provided AudioSettingsSO
         public void InitVolumeUpdater()
         {
-            float volume = AudioManager.GetVolume(audioType);
-            slider.value = volume;
+            float volume = audioService.GetVolume(audioType);
+
+            if (slider != null)
+            {
+                slider.value = volume;
+            }
+
             UpdateVolumeText(volume);
             UpdateMuteText(volume);
-            isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
-            UpdateMuteImage();
+
+            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
+            isMuted = settings != null && settings.isMuted;
+
+            UpdateMuteImage(settings);
         }
 
         // Called when the volume slider value changes
         private void OnVolumeChanged(float value)
         {
             audioService.SetVolume(audioType, value);
-            UpdateMuteImage();
+            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
+            UpdateMuteImage(settings);
             UpdateVolumeText(value);
         }
 
@@ -78,18 +85,19 @@ namespace MyUnityPackage.Toolkit
         private void OnMuteClicked()
         {
             MUPLogger.Info("OnMuteClicked");
-            AudioManager.ToggleMute(audioType);
-            isMuted = AudioManager.GetAudioSettingsFromAudioType(audioType).isMuted;
+            audioService.ToggleMute(audioType);
+            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
+            isMuted = settings != null && settings.isMuted;
             MUPLogger.Info(audioType.ToString() + " isMuted: " + isMuted.ToString());
 
-            float currentVolume = AudioManager.GetVolume(audioType);
+            float currentVolume = audioService.GetVolume(audioType);
             if (slider != null)
             {
                 slider.value = currentVolume;
                 UpdateVolumeText(currentVolume);
             }
             UpdateMuteText(currentVolume);
-            UpdateMuteImage();
+            UpdateMuteImage(settings);
 
         }
 
@@ -107,15 +115,27 @@ namespace MyUnityPackage.Toolkit
         {
             if (muteText != null)
             {
-                muteText.text = value <= 0.0001f ? "Unmute" : "Mute";
+                muteText.text = value <= AudioManager.MuteThreshold ? "Unmute" : "Mute";
             }
         }
 
         // Updates the mute button image to reflect the current mute state
-        private void UpdateMuteImage()
+        private void UpdateMuteImage(AudioManager.AudioSetting settings)
         {
-            if (muteButton == null) return;
-            muteButton.image.sprite = AudioManager.GetMuteSprite(audioType);
+            if (muteButton == null || muteButton.image == null)
+            {
+                return;
+            }
+
+            var sprite = settings?.settingsSO == null
+                ? null
+                : (settings.isMuted ? settings.settingsSO.mutedImage : settings.settingsSO.unmutedImage);
+
+            muteButton.image.enabled = sprite != null;
+            if (sprite != null)
+            {
+                muteButton.image.sprite = sprite;
+            }
         }
     }
 }

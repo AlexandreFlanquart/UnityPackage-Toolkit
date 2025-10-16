@@ -56,7 +56,7 @@ namespace MyUnityPackage.Toolkit
         }
 
         // Default values
-        private const float MIN_VOLUME = 0.0001f; // -80dB
+        public const float MuteThreshold = 0.0001f; // -80dB
         private const float MAX_VOLUME = 1f; // 0dB
 
         public static AudioSetting GetAudioSettingsFromAudioType(AudioType audioType)
@@ -139,16 +139,27 @@ namespace MyUnityPackage.Toolkit
         {
             MUPLogger.Info("Set volume " + audioSetting.AUDIO_NAME + " to " + volume);
             if (AudioMixer == null) return;
-            if(audioSetting.currentVolume <= 0f && volume >= 0)
-                audioSetting.isMuted = false;
-            else if(audioSetting.currentVolume >= 0f && volume <= 0)
-                audioSetting.isMuted = true;
+            var previousVolume = audioSetting.currentVolume;
+
+            volume = Mathf.Clamp(volume, 0f, MAX_VOLUME);
+            bool shouldMute = volume <= MuteThreshold;
+
+            if (shouldMute && !audioSetting.isMuted)
+            {
+                audioSetting.beforeMutedVolume = Mathf.Max(previousVolume, MuteThreshold);
+            }
+
+            if (!shouldMute)
+            {
+                audioSetting.beforeMutedVolume = volume;
+            }
 
             // Convert linear volume (0-1) to dB (-80 to 0)
-            float dB = volume <= MIN_VOLUME ? -80f : Mathf.Log10(volume) * 20f;
+            float dB = shouldMute ? -80f : Mathf.Log10(Mathf.Max(volume, MuteThreshold)) * 20f;
             AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
-            
-            audioSetting.currentVolume = volume;
+
+            audioSetting.currentVolume = shouldMute ? 0f : volume;
+            audioSetting.isMuted = shouldMute;
         }
 
         /// <summary>
@@ -245,21 +256,20 @@ namespace MyUnityPackage.Toolkit
         private static void ToggleMute(AudioSetting audioSetting)
         {
             if (AudioMixer == null) return;
-            //MUPLogger.Info("audioType: " + audioSetting.currentVolume);
-            float currentVolume;
-            AudioMixer.GetFloat(audioSetting.AUDIO_NAME, out currentVolume);
-
-            // If already muted (-80dB), restore to default volume
-            if (currentVolume <= -80f)
+            if (audioSetting.isMuted)
             {
-                SetVolume(audioSetting, audioSetting.beforeMutedVolume);
-                audioSetting.isMuted = false;
+                var volumeToRestore = audioSetting.beforeMutedVolume > MuteThreshold
+                    ? audioSetting.beforeMutedVolume
+                    : Mathf.Max(audioSetting.defaultVolume, MuteThreshold);
+                SetVolume(audioSetting, volumeToRestore);
             }
             else
             {
-                audioSetting.beforeMutedVolume = audioSetting.currentVolume;
-                SetVolume(audioSetting, MIN_VOLUME);
-                audioSetting.isMuted = true;
+                var lastAudibleVolume = audioSetting.currentVolume > MuteThreshold
+                    ? audioSetting.currentVolume
+                    : Mathf.Max(Mathf.Max(audioSetting.beforeMutedVolume, audioSetting.defaultVolume), MuteThreshold);
+                audioSetting.beforeMutedVolume = lastAudibleVolume;
+                SetVolume(audioSetting, 0f);
             }
         }
 
