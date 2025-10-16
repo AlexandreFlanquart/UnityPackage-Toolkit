@@ -223,6 +223,7 @@ GameObject:
   - component: {fileID: 8641857289656017615}
   - component: {fileID: 4804092922807071694}
   - component: {fileID: 7264545387569158277}
+  - component: {fileID: 6524146036896521960}
   m_Layer: 0
   m_Name: Settings - Button
   m_TagString: Untagged
@@ -343,6 +344,19 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+--- !u!114 &6524146036896521960
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 145511726643837691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 067addc7333879041b51cbffc97df14b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: 313beed1f321d1942b5c66dbaf0897e2, type: 3}
 --- !u!1 &441816664550734123
 GameObject:
   m_ObjectHideFlags: 0
@@ -1308,6 +1322,7 @@ GameObject:
   - component: {fileID: 5437681750851984038}
   - component: {fileID: 1098190493146801772}
   - component: {fileID: 2343517033874918351}
+  - component: {fileID: 6589830876034874402}
   m_Layer: 0
   m_Name: Menu - Button
   m_TagString: Untagged
@@ -1417,6 +1432,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6589830876034874402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3429771558172189039}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 067addc7333879041b51cbffc97df14b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: 313beed1f321d1942b5c66dbaf0897e2, type: 3}
 --- !u!1 &3455464091415499400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1884,7 +1912,6 @@ MonoBehaviour:
   slider: {fileID: 8241888291172164356}
   muteText: {fileID: 0}
   isMuted: 0
-  audioSettingsSO: {fileID: 11400000, guid: 6f21dd8cf78851c4cbd019edf91fd72f, type: 2}
 --- !u!1 &4190405078371157804
 GameObject:
   m_ObjectHideFlags: 0
@@ -2147,7 +2174,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &8493253591371005419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3158,7 +3185,6 @@ MonoBehaviour:
   slider: {fileID: 8149185287344335487}
   muteText: {fileID: 0}
   isMuted: 0
-  audioSettingsSO: {fileID: 11400000, guid: bbf159e52074a8f46b05846f4db0ee4b, type: 2}
 --- !u!1 &7480664484712516655
 GameObject:
   m_ObjectHideFlags: 0
@@ -3226,7 +3252,6 @@ MonoBehaviour:
   slider: {fileID: 7070928179495279736}
   muteText: {fileID: 0}
   isMuted: 0
-  audioSettingsSO: {fileID: 11400000, guid: 9edd89eba89d4e24a8021e41dbd7129c, type: 2}
 --- !u!1 &7563992617686236357
 GameObject:
   m_ObjectHideFlags: 0

@@ -80,7 +80,7 @@ public class AudioManagerService : IAudioService
 
 **Fichier :** [`Runtime/Scripts/Audio/AudioPlaybackService.cs`](../Runtime/Scripts/Audio/AudioPlaybackService.cs)
 
-Service MonoBehaviour responsable de la lecture des musiques, effets sonores et voix. Il expose une interface `IAudioPlaybackService` pour faciliter l'injection dans vos scripts.
+Service MonoBehaviour responsable de la lecture des musiques, effets sonores et voix. 
 
 #### Fonctionnalités principales :
 - **Lecture par canal** : une source audio dédiée pour la musique, les SFX et les voix.
@@ -96,7 +96,7 @@ Service MonoBehaviour responsable de la lecture des musiques, effets sonores et 
 - `Stop(AudioType)` / `StopAll()` : arrête une lecture sur un canal ou tous les canaux.
 
 > ⚠️ **Astuce :** ajoutez ce composant à un GameObject de votre scène (ex: `AudioSystem`) pour exposer le service via le `ServiceLocator`.
-Vous pouvez ensuite le récupérer dans vos scripts avec `ServiceLocator.GetService<AudioPlaybackService>()` (ou le caster en `IAudioPlaybackService`).
+Vous pouvez ensuite le récupérer dans vos scripts avec `ServiceLocator.GetService<AudioPlaybackService>()`.
 
 ### 5. AudioUpdater (Composant UI)
 

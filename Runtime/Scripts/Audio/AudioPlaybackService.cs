@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Audio;
 
 namespace MyUnityPackage.Toolkit
 {
@@ -8,7 +7,7 @@ namespace MyUnityPackage.Toolkit
     /// Service responsible for playing back audio clips (music, sound effects, voice).
     /// </summary>
     [DisallowMultipleComponent]
-    public class AudioPlaybackService : MonoBehaviour, IAudioPlaybackService
+    public class AudioPlaybackService : MonoBehaviour
     {
         [Header("Audio Sources")]
         [SerializeField] private AudioSource musicSource;
@@ -96,12 +95,6 @@ namespace MyUnityPackage.Toolkit
 
             volume = Mathf.Clamp01(volume);
 
-            if (audioType == AudioManager.AudioType.SFX && !loop)
-            {
-                source.PlayOneShot(clip, volume);
-                return source;
-            }
-
             if (source.isPlaying)
             {
                 source.Stop();
@@ -115,7 +108,6 @@ namespace MyUnityPackage.Toolkit
             return source;
         }
 
-        /// <inheritdoc />
         public AudioClip PlayFromResources(string resourcePath, AudioManager.AudioType audioType, bool loop = false, float volume = 1f)
         {
             if (string.IsNullOrEmpty(resourcePath))

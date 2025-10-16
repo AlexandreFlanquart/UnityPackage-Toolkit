@@ -7,6 +7,7 @@ namespace MyUnityPackage.Toolkit
         private void Start()
         {
             SetupGame();
+            ServiceLocator.GetService<AudioPlaybackService>().PlayMusic((AudioClip)Resources.Load("Music"));
         }
 
         private void SetupGame()
