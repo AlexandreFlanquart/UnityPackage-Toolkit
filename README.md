@@ -9,7 +9,7 @@ Ce toolkit est conçu pour les développeurs qui souhaitent avoir une base solid
 
 La documentation détaillée de chaque système est disponible dans le dossier `Docs/` :
 
-- [Docs/AudioSystem.md](Docs/AudioSystem.md) : configuration de l'AudioManager, VoiceManager, AudioUpdater et intégration AudioMixer.
+- [Docs/AudioSystem.md](Docs/AudioSystem.md) : configuration de l'AudioManager, du service de lecture AudioPlaybackService, VoiceManager, AudioUpdater et intégration AudioMixer.
 - [Docs/UISystem.md](Docs/UISystem.md) : gestion de l'UIManager, des composants UI, des Canvas et des transitions animées.
 - [Docs/ServiceLocator.md](Docs/ServiceLocator.md) : pattern ServiceLocator, création et cycle de vie des services.
 - [Docs/MUPLogger.md](Docs/MUPLogger.md) : mise en place du logger, gestion des niveaux de log et intégrations Unity.
