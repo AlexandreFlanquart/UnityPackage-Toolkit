@@ -77,6 +77,25 @@ namespace MyUnityPackage.Toolkit
         }
 
         /// <summary>
+        /// Removes a registered service when it is no longer available.
+        /// </summary>
+        /// <typeparam name="T">Type of service to remove</typeparam>
+        /// <param name="component">Component instance that should be removed from the locator.</param>
+        public static void RemoveService<T>(Component component) where T : Component
+        {
+            if (component == null)
+            {
+                return;
+            }
+
+            var serviceType = typeof(T);
+            if (servicecontainer.TryGetValue(serviceType, out var existing) && existing == component)
+            {
+                servicecontainer.Remove(serviceType);
+            }
+        }
+
+        /// <summary>
         /// Check if a service is already referenced
         /// </summary>
         /// <returns>If a service is already referenced</returns>
