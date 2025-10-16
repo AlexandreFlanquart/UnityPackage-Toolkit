@@ -76,7 +76,29 @@ public class AudioManagerService : IAudioService
 }
 ```
 
-### 4. AudioUpdater (Composant UI)
+### 4. AudioPlaybackService (Service de lecture)
+
+**Fichier :** [`Runtime/Scripts/Audio/AudioPlaybackService.cs`](../Runtime/Scripts/Audio/AudioPlaybackService.cs)
+
+Service MonoBehaviour responsable de la lecture des musiques, effets sonores et voix. Il expose une interface `IAudioPlaybackService` pour faciliter l'injection dans vos scripts.
+
+#### Fonctionnalités principales :
+- **Lecture par canal** : une source audio dédiée pour la musique, les SFX et les voix.
+- **Compatibilité AudioMixer** : affecte automatiquement le groupe du mixer correspondant (Music/SFX/Voice) si présent.
+- **Chargement via Resources** : possibilité de charger et jouer un clip directement depuis le dossier `Resources`.
+- **Boucle ou lecture ponctuelle** : configuration fine via les paramètres `loop` et `volume`.
+- **Arrêt global** : méthodes pour stopper un canal spécifique ou l'ensemble des lectures.
+
+#### Méthodes principales :
+- `PlayClip(AudioClip, AudioType, bool loop = false, float volume = 1f)` : joue un clip sur le canal souhaité.
+- `PlayFromResources(string path, AudioType, bool loop = false, float volume = 1f)` : charge un clip depuis `Resources` et le joue immédiatement.
+- Helpers `PlayMusic`, `PlaySFX` et `PlayVoice` : raccourcis pour les canaux les plus courants.
+- `Stop(AudioType)` / `StopAll()` : arrête une lecture sur un canal ou tous les canaux.
+
+> ⚠️ **Astuce :** ajoutez ce composant à un GameObject de votre scène (ex: `AudioSystem`) pour exposer le service via le `ServiceLocator`.
+Vous pouvez ensuite le récupérer dans vos scripts avec `ServiceLocator.GetService<AudioPlaybackService>()` (ou le caster en `IAudioPlaybackService`).
+
+### 5. AudioUpdater (Composant UI)
 
 **Fichier :** [`Runtime/Scripts/Audio/AudioUpdater.cs`](../Runtime/Scripts/Audio/AudioUpdater.cs)
 
@@ -109,7 +131,7 @@ Composant MonoBehaviour qui gère l'interface utilisateur pour le contrôle audi
 - `InjectAudioService(IAudioService)` : Injection de dépendance
 - `InitVolumeUpdater()` : Initialise l'UI avec les valeurs par défaut
 
-### 5. AudioSettingsSO (ScriptableObject)
+### 6. AudioSettingsSO (ScriptableObject)
 
 **Fichier :** [`Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs`](../Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs)
 
@@ -126,7 +148,7 @@ public class AudioSettingsSO : ScriptableObject
 }
 ```
 
-### 6. VoiceAgent (Composant Audio)
+### 7. VoiceAgent (Composant Audio)
 
 **Fichier :** [`Runtime/Scripts/Audio/VoiceAgent.cs`](../Runtime/Scripts/Audio/VoiceAgent.cs)
 

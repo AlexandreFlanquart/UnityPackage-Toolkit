@@ -213,6 +213,28 @@ namespace MyUnityPackage.Toolkit
             EnsureInitialized();
             return GetVolume(audioType.ToString());
         }
+
+        /// <summary>
+        /// Retrieve an <see cref="AudioMixerGroup"/> that matches the provided <see cref="AudioType"/>.
+        /// </summary>
+        /// <param name="audioType">The audio type used to look for a matching mixer group.</param>
+        /// <returns>The first matching <see cref="AudioMixerGroup"/> or <c>null</c> if none could be found.</returns>
+        public static AudioMixerGroup GetAudioMixerGroup(AudioType audioType)
+        {
+            if (AudioMixer == null)
+            {
+                return null;
+            }
+
+            var groups = AudioMixer.FindMatchingGroups(audioType.ToString());
+            if (groups != null && groups.Length > 0)
+            {
+                return groups[0];
+            }
+
+            MUPLogger.Warning($"AudioMixer group '{audioType}' not found. Ensure a matching group exists in the AudioMixer.");
+            return null;
+        }
         #endregion
 
         #region Mute Control Methods
