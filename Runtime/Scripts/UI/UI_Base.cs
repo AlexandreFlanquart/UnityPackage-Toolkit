@@ -5,8 +5,12 @@ namespace MyUnityPackage.Toolkit
     [RequireComponent(typeof(CanvasHelper))]
     public abstract class UI_Base : MonoBehaviour
     {
-        [SerializeField] private CanvasHelper canvasHelper = default;
+        private CanvasHelper canvasHelper = default;
 
+        void Start()
+        {
+            canvasHelper = GetComponent<CanvasHelper>();   
+        }
         public virtual void Show()
         {
             canvasHelper.Show();
