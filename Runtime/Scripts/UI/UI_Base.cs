@@ -7,10 +7,12 @@ namespace MyUnityPackage.Toolkit
     {
         private CanvasHelper canvasHelper = default;
 
-        void Start()
+        protected virtual void Start()
         {
-            canvasHelper = GetComponent<CanvasHelper>();   
+            Debug.Log("UI_Base Start");
+            canvasHelper = GetComponent<CanvasHelper>();
         }
+        
         public virtual void Show()
         {
             canvasHelper.Show();

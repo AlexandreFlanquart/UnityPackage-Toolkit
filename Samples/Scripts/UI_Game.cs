@@ -3,22 +3,22 @@ using UnityEngine.UI;
 
 namespace MyUnityPackage.Toolkit
 {
-    public class UI_Game : MonoBehaviour
+    public class UI_Game : UI_Base
     {
         [SerializeField] private Button buttonBack;
 
         // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
+        protected override void Start()
         {
-            UIManager.AddCanvasUI<UI_Game>(gameObject);
+            base.Start();
             buttonBack.onClick.AddListener(OnButtonBackClick);
         }
 
         private void OnButtonBackClick()
         {
             MUPLogger.Info("OnButtonBackClick");
-            UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Game>().gameObject, "FadeOut");
-            UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Menu>().gameObject, "FadeIn");
+            Hide();
+            ServiceLocator.GetService<UI_Menu>().Show();
         }
     }
 }
