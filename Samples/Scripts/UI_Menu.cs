@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,20 +6,21 @@ using UnityEngine.UI;
 namespace MyUnityPackage.Toolkit
 {
     public class UI_Menu : UI_Base
-    {   
+    {
         [SerializeField] private Button buttonPlay;
+
         // Start is called once before the first execution of Update after the MonoBehaviour is created
-        void Start()
-        {
-            UIManager.AddCanvasUI<UI_Menu>(gameObject);
+        protected override void Start()
+        { 
+            base.Start();
             buttonPlay.onClick.AddListener(OnButtonPlayClick);
         }
 
         private void OnButtonPlayClick()
         {
             MUPLogger.Info("OnButtonPlayClick");
-            UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Menu>().gameObject, "FadeOut");
-            UIManager.PlayTransitionByName(UIManager.GetCanvasUI<UI_Game>().gameObject, "FadeIn");
+            Hide();
+            ServiceLocator.GetService<UI_Game>().Show();
         }
     }
 }
