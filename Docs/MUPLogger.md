@@ -11,6 +11,14 @@ MUPLogger.IncludeTimestamp = true;
 MUPLogger.MinimumLevel = MUPLogger.LogLevel.Info;
 ```
 
+## Niveau d'Information 
+
+- Debug 
+- Info
+- Warning 
+- Error 
+- Exception
+
 ## Utilisation
 
 ```C#

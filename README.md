@@ -12,6 +12,7 @@ La documentation détaillée de chaque système est disponible dans le dossier `
 - [Docs/AudioSystem.md](Docs/AudioSystem.md) : configuration de l'AudioManager, du service de lecture AudioPlaybackService, VoiceManager, AudioUpdater et intégration AudioMixer.
 - [Docs/UISystem.md](Docs/UISystem.md) : gestion de l'UIManager, des composants UI, des Canvas et des transitions animées.
 - [Docs/ServiceLocator.md](Docs/ServiceLocator.md) : pattern ServiceLocator, création et cycle de vie des services.
+- [Docs/ObjectPool.md](Docs/ObjectPool.md) : composant permettant la réutilisation d'objet.
 - [Docs/MUPLogger.md](Docs/MUPLogger.md) : mise en place du logger, gestion des niveaux de log et intégrations Unity.
 
 ## Installation
