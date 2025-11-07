@@ -34,7 +34,10 @@ public class GameManagerObjectPool : MonoBehaviour
     }
     public void RemoveToPool()
     {
-        GameObject go = parent.transform.GetChild(parent.transform.childCount-1).gameObject;
+        int index = parent.transform.childCount-1;
+        if(index <0)
+            return;
+        GameObject go = parent.transform.GetChild(index).gameObject;
         go.transform.SetParent(InactiveParent.transform);
         objectPooling.Release(go);
         
