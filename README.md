@@ -44,7 +44,6 @@ Pour voir les dernières mises à jour du package, consultez [CHANGELOG.md](CHAN
 Le package inclut des exemples complets dans le dossier `Samples~` :
 - Prefabs d'interface utilisateur
 - Scènes d'exemple
-- Animations de transition
 - Scripts de démonstration
 
 ## Dépannage

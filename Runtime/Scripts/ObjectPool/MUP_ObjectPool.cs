@@ -1,9 +1,10 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-
+/// <summary>
+/// A generic object pool implementation for Unity GameObjects
+/// </summary>
 namespace MyUnityPackage.Toolkit
 {
     public class MUP_ObjectPool
@@ -23,9 +24,17 @@ namespace MyUnityPackage.Toolkit
         /// <param name="maxSizeActive"></param>
         /// <param name="parent"></param>
         /// <param name="prefab"></param>
-        public void Initialize(int baseSizeQueue, int maxSizeQueue,int maxSizeActive, Transform parent, GameObject prefab)
+        public void Initialize(int baseSizeQueue, int maxSizeQueue, int maxSizeActive, Transform parent, GameObject prefab)
         {
-
+            if (prefab == null)
+                throw new ArgumentNullException(nameof(prefab));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+            if (baseSizeQueue < 0)
+                throw new ArgumentException("Base size must be positive", nameof(baseSizeQueue));
+            if (maxSizeQueue < baseSizeQueue)
+                throw new ArgumentException("Max size must be greater than base size", nameof(maxSizeQueue));
+            
             ObjectPool_ = new ObjectPool<GameObject>(
                 AddObjectToPool, 
                 OnGetPool,
@@ -47,6 +56,9 @@ namespace MyUnityPackage.Toolkit
         /// <returns></returns>
         public GameObject Get()
         {
+            if (ObjectPool_ == null)
+                throw new InvalidOperationException("Object pool not initialized");
+        
             if(maxSizeActive >= 0 && ObjectPool_.CountActive >= maxSizeActive)
                 return null;
             return ObjectPool_.Get();
@@ -57,6 +69,12 @@ namespace MyUnityPackage.Toolkit
         /// <param name="obj"></param>
         public void Release(GameObject obj)
         {
+            if (obj == null)
+                return;
+        
+            if (ObjectPool_ == null)
+                throw new InvalidOperationException("Object pool not initialized");
+        
             ObjectPool_.Release(obj);
         }
 
@@ -85,6 +103,15 @@ namespace MyUnityPackage.Toolkit
             GameObject go = GameObject.Instantiate(prefab, parent);
             
             return go;
+        }
+
+        public void Clear()
+        {
+            if (ObjectPool_ != null)
+            {
+                ObjectPool_.Clear();
+                MUPLogger.Info("Cleared object pool");
+            }
         }
     }
 }

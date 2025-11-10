@@ -18,7 +18,7 @@ Classe abstraite de base pour tous les composants UI.
 ```csharp
 public abstract class UI_Base : MonoBehaviour
 {
-    [SerializeField] private CanvasHelper canvasHelper = default;
+    private CanvasHelper canvasHelper = default;
 
     public virtual void Show()    // Affiche le canvas
     public virtual void Hide()    // Cache le canvas
