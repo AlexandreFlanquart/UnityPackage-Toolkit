@@ -22,7 +22,7 @@ public class GameManagerObjectPool : MonoBehaviour
     {
         objectPooling = new MUP_ObjectPool();
         MUP_ObjectPoolLocator.Add<Bullett>(objectPooling);
-        objectPooling.Initialize(10, 2,20, parent.transform,prefab);
+        objectPooling.Initialize(10, 20,20, parent.transform,prefab);
         objectPooling.OnGetPoolAction += delegate {MUPLogger.Info("Je get depuis l'action");};
         objectPooling.OnReturnPoolAction += delegate {MUPLogger.Info("Je release depuis l'action");};
         objectPooling.OnReturnPoolAction += delegate {MUPLogger.Info("Je destroy depuis l'action");};
@@ -30,7 +30,7 @@ public class GameManagerObjectPool : MonoBehaviour
     public void AddToPool()
     {
         GameObject go = objectPooling.Get();
-        go.transform.SetParent(parent.transform);
+        go?.transform.SetParent(parent.transform);
     }
     public void RemoveToPool()
     {

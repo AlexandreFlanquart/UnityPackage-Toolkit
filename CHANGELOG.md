@@ -1,3 +1,13 @@
+## [1.0.5] - 2025-11-17
+### Fixed
+- Fix objectpool parameters & check null reference
+
+### Update
+- Update docs
+
+### Removed
+- Animation System resource folder
+
 ## [1.0.4] - 2025-11-06
 ### Added
 - Add MUP_ObjectPool Component

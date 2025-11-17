@@ -1,12 +1,12 @@
 # Système de Gestion UI
 
-Documentation minimaliste pour le système de gestion de l'interface utilisateur avec support des transitions.
+Documentation minimaliste pour le système de gestion de l'interface utilisateur.
 
 ## 📋 Vue d'ensemble
 
-Le système UI se compose de deux parties principales :
+Le système UI :
 - **Gestion des Canvas** : [`UI_Base.cs`](../Runtime/Scripts/UI/UI_Base.cs) et [`CanvasHelper.cs`](../Runtime/Scripts/UI/CanvasHelper.cs)
-- **Système de Transitions** : ScriptableObjects pour les animations et transitions personnalisées
+
 
 ---
 

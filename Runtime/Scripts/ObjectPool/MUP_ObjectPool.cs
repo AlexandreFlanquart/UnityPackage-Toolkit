@@ -15,7 +15,7 @@ namespace MyUnityPackage.Toolkit
         public Action OnGetPoolAction;
         public Action OnReturnPoolAction;
         public Action OnDestroyPoolAction;
-        private int maxSizeActive = 0;
+        private int maxSizeActive = 0; // max active objects, 0 or less means no limit
         /// <summary>
         /// Initialize the objectpool
         /// </summary>

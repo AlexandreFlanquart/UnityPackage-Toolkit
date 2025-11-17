@@ -7,7 +7,7 @@ Gestionnaire d'objets ayant pour but de réutiliser les objets créés afin d'é
 Instancier et initialiser un nouveau pool d'objets
 ```c#
 MUP_ObjectPool objectPooling = new MUP_ObjectPool();
-objectPooling.Initialize(10, 2, 20, parent.transform, prefab);
+objectPooling.Initialize(10, 20, 20, parent.transform, prefab);
 ```
 
 Récupérer un objet 
