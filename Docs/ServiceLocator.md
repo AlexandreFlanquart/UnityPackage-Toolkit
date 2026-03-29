@@ -1,54 +1,62 @@
 # ServiceLocator
 
-Gestionnaire de services pour Unity. Trouve automatiquement les composants dans la scène et les met en cache.
+Service manager for Unity. Automatically finds components in the scene and caches them.
 
-## Utilisation
+## When to use it
+- When you want a lightweight way to access scene services without wiring references everywhere.
+- When you want to avoid repeated `FindObjectOfType` calls (results are cached).
 
-### Récupérer un service (recommandé)
+## Usage
+
+### Get a service (recommended)
 ```C#
 void Start()
 {
-    // Trouve automatiquement le service dans la scène
+    // Automatically finds the service in the scene
     MyClass instance = ServiceLocator.GetService<MyClass>();
     
-    // Créer automatiquement si non trouvé
+    // Automatically create if not found
     MyClass instance = ServiceLocator.GetService<MyClass>(createObjectIfNotFound: true);
 }
 ```
 
-### Enregistrer manuellement (optionnel)
+### Register manually (optional)
 ```C#
 void Awake()
 {
-    // Enregistrer manuellement (pour optimisation ou contrôle)
+    // Register manually (for optimization or control)
     ServiceLocator.AddService<MyClass>(gameObject);
     
-    // Remplacer un service existant
+    // Replace an existing service
     ServiceLocator.AddService<MyClass>(gameObject, replaceExisting: true);
 }
 ```
 
-### Vérifier l'existence
+### Check existence
 ```C#
 if (ServiceLocator.Exists<MyClass>())
 {
-    // Le service existe
+    // The service exists
 }
 ```
 
-### Nettoyer le cache
+### Clear the cache
 ```C#
-ServiceLocator.Clear(); // Supprime tous les services du cache
+ServiceLocator.Clear(); // Removes all services from the cache
 ```
 
-## Comportement
+## Behavior
 
-- **Recherche automatique** : `GetService<T>()` trouve automatiquement le composant dans la scène
-- **Cache intelligent** : Les services trouvés sont mis en cache pour éviter les recherches coûteuses
-- **Objets inactifs** : Trouve aussi les objets inactifs (`FindObjectsInactive.Include`)
-- **Enregistrement optionnel** : `AddService()` est utile pour l'optimisation ou le contrôle explicite
+- **Automatic search**: `GetService<T>()` automatically finds the component in the scene
+- **Smart cache**: found services are cached to avoid expensive searches
+- **Inactive objects**: also finds inactive objects (`FindObjectsInactive.Include`)
+- **Optional registration**: `AddService()` is useful for optimization or explicit control
 
-## Méthodes
+## Notes
+- If you change scenes, cached references may become invalid depending on your lifecycle; call `ServiceLocator.Clear()` when appropriate.
+- If you have multiple instances of the same service type, prefer explicit `AddService()` to control which one is returned.
+
+## Methods
 
 ```C#
 ServiceLocator.AddService<T>(GameObject, replaceExisting?)

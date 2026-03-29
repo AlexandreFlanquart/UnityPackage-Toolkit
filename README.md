@@ -1,55 +1,55 @@
 ﻿# UnityPackage-Toolkit
 
 ## Description
-**UnityPackage-Toolkit** est un package Unity complet qui fournit un ensemble d'outils essentiels pour démarrer rapidement un nouveau projet. Il inclut des systèmes d'audio avancés, de gestion d'interface utilisateur, de transitions animées, et bien plus encore.
+**UnityPackage-Toolkit** is a comprehensive Unity package that provides a set of essential tools to quickly start a new project. It includes advanced audio systems, UI management, object pooling, and much more.
 
-Ce toolkit est conçu pour les développeurs qui souhaitent avoir une base solide et modulaire pour leurs projets Unity, avec des fonctionnalités prêtes à l'emploi et optimisées.
+This toolkit is designed for developers who want a solid, modular foundation for their Unity projects, with ready-to-use, optimized features.
 
-## Fonctionnalités principales
+## Key Features
 
-La documentation détaillée de chaque système est disponible dans le dossier `Docs/` :
+Detailed documentation for each system is available in the `Docs/` folder:
 
-- [Docs/AudioSystem.md](Docs/AudioSystem.md) : configuration de l'AudioManager, du service de lecture AudioPlaybackService, VoiceManager, AudioUpdater et intégration AudioMixer.
-- [Docs/UISystem.md](Docs/UISystem.md) : gestion de l'UIManager, des composants UI, des Canvas et des transitions animées.
-- [Docs/ServiceLocator.md](Docs/ServiceLocator.md) : pattern ServiceLocator, création et cycle de vie des services.
-- [Docs/ObjectPool.md](Docs/ObjectPool.md) : composant permettant la réutilisation d'objet.
-- [Docs/MUPLogger.md](Docs/MUPLogger.md) : mise en place du logger, gestion des niveaux de log et intégrations Unity.
+- [Docs/AudioSystem.md](Docs/AudioSystem.md): setup of the AudioManager, AudioPlaybackService, VoiceManager, AudioUpdater, and AudioMixer integration.
+- [Docs/UISystem.md](Docs/UISystem.md): UI canvas management helpers and base classes.
+- [Docs/ServiceLocator.md](Docs/ServiceLocator.md): ServiceLocator pattern, creation, and lifecycle of services.
+- [Docs/ObjectPool.md](Docs/ObjectPool.md): object pooling and a pool locator helper.
+- [Docs/MUPLogger.md](Docs/MUPLogger.md): logger setup, log level management, and Unity integrations.
 
 ## Installation
 
-### 1. Ouvrir le Package Manager
-1. Dans Unity, allez dans le **menu supérieur**
-2. Cliquez sur **Window > Package Manager**
-3. La fenêtre **Package Manager** s'ouvrira
+### 1. Open the Package Manager
+1. In Unity, go to the **top menu**
+2. Click **Window > Package Manager**
+3. The **Package Manager** window will open
 
-### 2. Ajouter le package Git
-1. Dans le **Package Manager**, cliquez sur le bouton **+** (coin supérieur gauche)
-2. Sélectionnez **"Add package from git URL..."**
-3. Entrez l'URL du repository Git :
+### 2. Add the Git package
+1. In the **Package Manager**, click the **+** button (top-left corner)
+2. Select **"Add package from git URL..."**
+3. Enter the Git repository URL:
    ```
    https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git
    ```
-4. Cliquez sur **"Add"**, Unity téléchargera et installera le package
+4. Click **"Add"**; Unity will download and install the package
 
-### 3. Installer une version spécifique (optionnel)
-Pour installer une version spécifique, **ajoutez le tag** à la fin de l'URL :
+### 3. Install a specific version (optional)
+To install a specific version, **append the tag** to the end of the URL:
 ```
 https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git#v1.0.2
 ```
 
 ## Changelog
-Pour voir les dernières mises à jour du package, consultez [CHANGELOG.md](CHANGELOG.md) !
+To see the latest package updates, check out [CHANGELOG.md](CHANGELOG.md)!
 
-## Exemples
-Le package inclut des exemples complets dans le dossier `Samples~` :
-- Prefabs d'interface utilisateur
-- Scènes d'exemple
-- Scripts de démonstration
+## Examples
+The package includes complete examples in the `Samples~` folder:
+- UI prefabs
+- Example scenes
+- Demo scripts
 
-## Dépannage
-Si vous rencontrez un problème, signalez-le à l'équipe de développement.
+## Troubleshooting
+If you encounter an issue, report it to the development team.
 
 ## Attribution
-- **Images** :
-  - PixelPerfect : https://www.flaticon.com/free-icon/volume_727269
-  - Mayor Icons : https://www.flaticon.com/free-icon/volume-mute_4546899
+- **Images**:
+  - PixelPerfect: https://www.flaticon.com/free-icon/volume_727269
+  - Mayor Icons: https://www.flaticon.com/free-icon/volume-mute_4546899

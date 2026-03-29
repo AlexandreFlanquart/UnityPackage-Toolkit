@@ -9,7 +9,6 @@ namespace MyUnityPackage.Toolkit
 
         protected virtual void Start()
         {
-            Debug.Log("UI_Base Start");
             canvasHelper = GetComponent<CanvasHelper>();
         }
         

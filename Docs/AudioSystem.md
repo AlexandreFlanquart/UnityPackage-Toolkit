@@ -1,12 +1,12 @@
-# Documentation du Système Audio
+# Audio System Documentation
 
-## Vue d'ensemble
+## Overview
 
-Le système audio de UnityPackage-Toolkit fournit une architecture modulaire et extensible pour la gestion de l'audio dans Unity. Il utilise le pattern Service Locator et l'injection de dépendances pour une meilleure testabilité et flexibilité.
+The UnityPackage-Toolkit audio system provides a modular, extensible architecture for managing audio in Unity. It uses the Service Locator pattern and dependency injection to improve testability and flexibility.
 
 ## Architecture
 
-### Diagramme de l'architecture
+### Architecture diagram
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -22,34 +22,34 @@ Le système audio de UnityPackage-Toolkit fournit une architecture modulaire et 
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## Composants Principaux
+## Main Components
 
-### 1. AudioManager (Classe Statique)
+### 1. AudioManager (static class)
 
-**Fichier :** [`Runtime/Scripts/Managers/AudioManager.cs`](../Runtime/Scripts/Managers/AudioManager.cs)
+**File:** [`Runtime/Scripts/Managers/AudioManager.cs`](../Runtime/Scripts/Managers/AudioManager.cs)
 
-Le `AudioManager` est le cœur du système audio. Il gère les paramètres audio pour trois types d'audio : Music, SFX et Voice.
+`AudioManager` is the core of the audio system. It manages settings for three audio types: Music, SFX, and Voice.
 
-#### Fonctionnalités principales :
-- **Gestion des volumes** : Contrôle du volume pour chaque type d'audio
-- **Gestion du mute** : Activation/désactivation du son
-- **Conversion dB** : Conversion entre valeurs linéaires (0-1) et décibels (-80 à 0)
-- **Initialisation automatique** : Initialisation paresseuse des paramètres
+#### Key features:
+- **Volume management**: control volume per audio type
+- **Mute management**: enable/disable sound
+- **dB conversion**: convert between linear values (0–1) and decibels (-80 to 0)
+- **Lazy initialization**: initializes settings on demand
 
-#### Méthodes publiques principales :
-- `Initialize()` : Initialise le système avec les volumes par défaut (0.8f)
-- `SetVolume(AudioType, float)` : Définit le volume pour un type d'audio
-- `GetVolume(AudioType)` : Récupère le volume actuel
-- `ToggleMute(AudioType)` : Active/désactive le mute
-- `GetAudioSettingsFromAudioType(AudioType)` : Récupère les paramètres complets
+#### Main public methods:
+- `Initialize()`: initializes the system with default volumes (0.8f)
+- `SetVolume(AudioType, float)`: sets the volume for an audio type
+- `GetVolume(AudioType)`: gets the current volume
+- `ToggleMute(AudioType)`: toggles mute
+- `GetAudioSettingsFromAudioType(AudioType)`: retrieves the full settings object
 
-### 2. IAudioService (Interface)
+### 2. IAudioService (interface)
 
-**Fichier :** [`Runtime/Scripts/Audio/IAudioService.cs`](../Runtime/Scripts/Audio/IAudioService.cs)
+**File:** [`Runtime/Scripts/Audio/IAudioService.cs`](../Runtime/Scripts/Audio/IAudioService.cs)
 
-Interface définissant le contrat pour les services audio, permettant l'injection de dépendances et la testabilité.
+Interface defining the contract for audio services, enabling dependency injection and testability.
 
-#### Méthodes définies :
+#### Defined methods:
 ```csharp
 public interface IAudioService
 {
@@ -61,129 +61,129 @@ public interface IAudioService
 }
 ```
 
-### 3. AudioManagerService (Implémentation)
+### 3. AudioManagerService (implementation)
 
-**Fichier :** [`Runtime/Scripts/Audio/AudioManagerService.cs`](../Runtime/Scripts/Audio/AudioManagerService.cs)
+**File:** [`Runtime/Scripts/Audio/AudioManagerService.cs`](../Runtime/Scripts/Audio/AudioManagerService.cs)
 
-Implémentation par défaut de `IAudioService` qui délègue toutes les opérations au `AudioManager` statique.
+Default implementation of `IAudioService` that delegates all operations to the static `AudioManager`.
 
 ```csharp
 public class AudioManagerService : IAudioService
 {
     public void SetVolume(AudioManager.AudioType audioType, float volume)
         => AudioManager.SetVolume(audioType, volume);
-    // ... autres méthodes
+    // ... other methods
 }
 ```
 
-### 4. AudioPlaybackService (Service de lecture)
+### 4. AudioPlaybackService (playback service)
 
-**Fichier :** [`Runtime/Scripts/Audio/AudioPlaybackService.cs`](../Runtime/Scripts/Audio/AudioPlaybackService.cs)
+**File:** [`Runtime/Scripts/Audio/AudioPlaybackService.cs`](../Runtime/Scripts/Audio/AudioPlaybackService.cs)
 
-Service MonoBehaviour responsable de la lecture des musiques, effets sonores et voix. 
+MonoBehaviour service responsible for playing music, sound effects, and voices.
 
-#### Fonctionnalités principales :
-- **Lecture par canal** : une source audio dédiée pour la musique, les SFX et les voix.
-- **Compatibilité AudioMixer** : affecte automatiquement le groupe du mixer correspondant (Music/SFX/Voice) si présent.
-- **Chargement via Resources** : possibilité de charger et jouer un clip directement depuis le dossier `Resources`.
-- **Boucle ou lecture ponctuelle** : configuration fine via les paramètres `loop` et `volume`.
-- **Arrêt global** : méthodes pour stopper un canal spécifique ou l'ensemble des lectures.
+#### Key features:
+- **Per-channel playback**: dedicated audio source for music, SFX, and voice
+- **AudioMixer compatibility**: automatically assigns the corresponding mixer group (Music/SFX/Voice) when available
+- **Resources loading**: can load and play a clip directly from the `Resources` folder
+- **Loop or one-shot**: fine control via `loop` and `volume` parameters
+- **Global stop**: methods to stop a specific channel or all channels
 
-#### Méthodes principales :
-- `PlayClip(AudioClip, AudioType, bool loop = false, float volume = 1f)` : joue un clip sur le canal souhaité.
-- `PlayFromResources(string path, AudioType, bool loop = false, float volume = 1f)` : charge un clip depuis `Resources` et le joue immédiatement.
-- Helpers `PlayMusic`, `PlaySFX` et `PlayVoice` : raccourcis pour les canaux les plus courants.
-- `Stop(AudioType)` / `StopAll()` : arrête une lecture sur un canal ou tous les canaux.
+#### Main methods:
+- `PlayClip(AudioClip, AudioType, bool loop = false, float volume = 1f)`: plays a clip on the desired channel
+- `PlayFromResources(string path, AudioType, bool loop = false, float volume = 1f)`: loads a clip from `Resources` and plays it immediately
+- Helpers `PlayMusic`, `PlaySFX`, and `PlayVoice`: shortcuts for the most common channels
+- `Stop(AudioType)` / `StopAll()`: stops playback on a channel or all channels
 
-> ⚠️ **Astuce :** ajoutez ce composant à un GameObject de votre scène (ex: `AudioSystem`) pour exposer le service via le `ServiceLocator`.
-Vous pouvez ensuite le récupérer dans vos scripts avec `ServiceLocator.GetService<AudioPlaybackService>()`.
+> ⚠️ **Tip:** add this component to a GameObject in your scene (e.g., `AudioSystem`) to expose the service via the `ServiceLocator`.
+> You can then retrieve it in your scripts with `ServiceLocator.GetService<AudioPlaybackService>()`.
 
-### 5. AudioUpdater (Composant UI)
+### 5. AudioUpdater (UI component)
 
-**Fichier :** [`Runtime/Scripts/Audio/AudioUpdater.cs`](../Runtime/Scripts/Audio/AudioUpdater.cs)
+**File:** [`Runtime/Scripts/Audio/AudioUpdater.cs`](../Runtime/Scripts/Audio/AudioUpdater.cs)
 
-Composant MonoBehaviour qui gère l'interface utilisateur pour le contrôle audio.
+MonoBehaviour component that manages the UI for audio control.
 
-#### Fonctionnalités :
-- **Slider de volume** : Contrôle visuel du volume
-- **Bouton mute** : Activation/désactivation du son
-- **Affichage du volume** : Texte montrant le pourcentage
-- **Images de mute** : Sprites pour l'état mute/unmute
-- **Injection de service** : Possibilité d'injecter un service personnalisé
+#### Features:
+- **Volume slider**: visual volume control
+- **Mute button**: toggles sound on/off
+- **Volume display**: text showing the percentage
+- **Mute images**: sprites for mute/unmute states
+- **Service injection**: ability to inject a custom service
 
-#### Configuration requise :
+#### Required setup:
 
-**Variables OBLIGATOIRES :**
-- `audioType` : Type d'audio à contrôler (Music/SFX/Voice)
-- `audioSettingsSO` : Configuration des paramètres (ScriptableObject)
+**REQUIRED variables:**
+- `audioType`: audio type to control (Music/SFX/Voice)
+- `audioSettingsSO`: settings configuration (ScriptableObject)
 
-**Variables OPTIONNELLES :**
-- `slider` : Composant UI Slider pour le contrôle du volume
-- `muteButton` : Bouton pour activer/désactiver le mute
-- `volumeText` : Texte affichant le pourcentage de volume
-- `muteText` : Texte du bouton mute ("Mute"/"Unmute")
-- `isMuted` : État initial du mute (booléen)
+**OPTIONAL variables:**
+- `slider`: UI Slider component for volume control
+- `muteButton`: button to toggle mute
+- `volumeText`: text showing the volume percentage
+- `muteText`: label for the mute button ("Mute"/"Unmute")
+- `isMuted`: initial mute state (bool)
 
-> ⚠️ **Important :** Les variables obligatoires doivent être assignées dans l'inspecteur, sinon le composant ne fonctionnera pas correctement. Les variables optionnelles sont vérifiées avec des `null checks` dans le code.
+> ⚠️ **Important:** required variables must be assigned in the Inspector; otherwise the component will not work correctly. Optional variables are guarded with null checks in the code.
 
-#### Méthodes principales :
-- `Initialize()` : Initialise le composant et configure les listeners
-- `InjectAudioService(IAudioService)` : Injection de dépendance
-- `InitVolumeUpdater()` : Initialise l'UI avec les valeurs par défaut
+#### Main methods:
+- `Initialize()`: initializes the component and configures listeners
+- `InjectAudioService(IAudioService)`: dependency injection
+- `InitVolumeUpdater()`: initializes the UI with default values
 
 ### 6. AudioSettingsSO (ScriptableObject)
 
-**Fichier :** [`Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs`](../Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs)
+**File:** [`Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs`](../Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs)
 
-Configuration des paramètres audio via un ScriptableObject.
+Audio settings configured via a ScriptableObject.
 
 ```csharp
 [CreateAssetMenu(fileName = "AudioSettingsSO", menuName = "ScriptableObjects/AudioSettingsSO")]
 public class AudioSettingsSO : ScriptableObject
 {
     [Range(0, 1)]
-    public float defaultVolume;    // Volume par défaut
-    public Sprite mutedImage;      // Image pour l'état mute
-    public Sprite unmutedImage;    // Image pour l'état unmute
+    public float defaultVolume;    // Default volume
+    public Sprite mutedImage;      // Image for muted state
+    public Sprite unmutedImage;    // Image for unmuted state
 }
 ```
 
-### 7. VoiceAgent (Composant Audio)
+### 7. VoiceAgent (audio component)
 
-**Fichier :** [`Runtime/Scripts/Audio/VoiceAgent.cs`](../Runtime/Scripts/Audio/VoiceAgent.cs)
+**File:** [`Runtime/Scripts/Audio/VoiceAgent.cs`](../Runtime/Scripts/Audio/VoiceAgent.cs)
 
-Composant spécialisé pour la gestion des voix et dialogues.
+Specialized component for managing voice and dialogue.
 
-#### Fonctionnalités :
-- **Lecture automatique** : Lecture au survol ou à l'activation
-- **Gestion des délais** : Délai avant la lecture
-- **Arrêt automatique** : Arrêt lors de la désactivation
-- **Intégration ServiceLocator** : Utilise le VoiceManager via ServiceLocator
+#### Features:
+- **Automatic playback**: plays on hover or activation
+- **Delay management**: delay before playback
+- **Automatic stop**: stops when disabled
+- **ServiceLocator integration**: uses VoiceManager via ServiceLocator
 
-## Configuration et Utilisation
+## Setup and Usage
 
-### 1. Configuration de l'AudioMixer
+### 1. AudioMixer setup
 
-1. Créer un AudioMixer dans Unity
-2. Exposer les paramètres suivants :
+1. Create an AudioMixer in Unity
+2. Expose the following parameters:
    - `Music` (float)
-   - `SFX` (float) 
+   - `SFX` (float)
    - `Voice` (float)
-3. Placer l'AudioMixer dans `Resources/AudioMixer`
+3. Place the AudioMixer in `Resources/AudioMixer`
 
-### 2. Création d'un AudioSettingsSO
+### 2. Create an AudioSettingsSO
 
-1. Clic droit dans le Project
+1. Right-click in the Project window
 2. Create → ScriptableObjects → AudioSettingsSO
-3. Configurer le volume par défaut et les sprites
+3. Configure the default volume and sprites
 
-### 3. Configuration de l'UI Audio
+### 3. Audio UI setup
 
-1. Créer un GameObject avec le script `AudioUpdater`
-2. Assigner les composants UI :
-   - Slider pour le volume
-   - Button pour le mute
-   - TextMeshPro pour l'affichage
-3. Assigner l'AudioSettingsSO
-4. Sélectionner le type d'audio (Music/SFX/Voice)
+1. Create a GameObject with the `AudioUpdater` script
+2. Assign the UI components:
+   - Slider for volume
+   - Button for mute
+   - TextMeshPro for display
+3. Assign the AudioSettingsSO
+4. Select the audio type (Music/SFX/Voice)
 

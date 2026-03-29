@@ -29,14 +29,7 @@ namespace MyUnityPackage.Toolkit
             }
 
             var located = FindService<T>(createObjectIfNotFound);
-            if (located != null)
-            {
-                return located;
-            }
-
-            var message = $"ServiceLocator couldn't find service of type {serviceType.Name} (auto-create set to {createObjectIfNotFound}).";
-            MUPLogger.Error(message);
-            throw new InvalidOperationException(message);
+            return located;
         }
 
         /// <summary>
@@ -63,9 +56,7 @@ namespace MyUnityPackage.Toolkit
 
             if (servicecontainer.TryGetValue(serviceType, out var existing) && existing != null && !replaceExisting)
             {
-                var message = $"ServiceLocator already contains a reference for type {serviceType.Name}. Pass replaceExisting=true to overwrite.";
-                MUPLogger.Error(message, existing);
-                throw new InvalidOperationException(message);
+                MUPLogger.Warning($"ServiceLocator already contains a reference for type {serviceType.Name}.", existing);
             }
 
             if (existing != null && replaceExisting)
@@ -126,11 +117,18 @@ namespace MyUnityPackage.Toolkit
         {
             var serviceType = typeof(T);
 
-            if (servicecontainer.TryGetValue(serviceType, out var cached) && cached != null)
+            // Check cache - if entry exists but object is invalid, clean it up
+            if (servicecontainer.TryGetValue(serviceType, out var cached))
             {
-                return (T)cached;
+                if (cached != null)
+                {
+                    return (T)cached;
+                }
+                // Invalid entry found, remove it before searching hierarchy
+                servicecontainer.Remove(serviceType);
             }
 
+            // Always search hierarchy if not in cache or cache was invalid
             var located = GameObject.FindAnyObjectByType<T>(FindObjectsInactive.Include);
             if (located != null)
             {

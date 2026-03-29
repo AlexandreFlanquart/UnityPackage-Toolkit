@@ -1,51 +1,58 @@
 # ObjectPool
 
-Gestionnaire d'objets ayant pour but de réutiliser les objets créés afin d'économiser du temps.
+Object manager aimed at reusing created objects to save time.
 
-## Utilisation
+## Usage
 
-Instancier et initialiser un nouveau pool d'objets
+### Create a pool
+Instantiate and initialize a new object pool:
 ```c#
 MUP_ObjectPool objectPooling = new MUP_ObjectPool();
 objectPooling.Initialize(10, 20, 20, parent.transform, prefab);
 ```
 
-Récupérer un objet 
+### Get an object
 ```c#
 GameObject go = objectPooling.Get();
 ```
 
-Libérer un objet 
+### Release an object
 ```c#
 objectPooling.Release(gameObject);
 ```
+
+## Best practices
+- Always `Release()` objects back to the pool instead of `Destroy()` to keep allocations stable.
+- Ensure pooled objects reset their state (position, rotation, enabled components, particles, etc.) when reused.
+- Prefer pooling for frequently spawned/despawned objects (bullets, VFX, decals, UI popups).
+
 # ObjectPoolLocator
 
-Manager ayant pour but de stocker tous les MUP_ObjectPool créés et de pouvoir les récupérer n'importe où dans le code, en se basant sur le principe d'un ServiceLocator.
+Manager that stores all created `MUP_ObjectPool` instances and lets you access them anywhere in code, based on the ServiceLocator principle.
 
 
-Récupérer l'objet :
-Permet de récupérer un **MUP_PoolObject** de type "Bullet" stocké dans le poolLocator.
+Retrieve an object:
+Gets a **MUP_PoolObject** of type "Bullet" stored in the pool locator.
 ```c#
 MUP_ObjectPool poolBullet = MUP_ObjectPoolLocator.Get<Bullet>();
 ```
 
 
-Ajouter l'objet:
-Permet d'ajouter un **MUP_PoolObject** de type "Bullet" dans le poolLocator.
+Add an object:
+Adds a **MUP_PoolObject** of type "Bullet" into the pool locator.
 ```c#
 MUP_ObjectPoolLocator.Add<Bullet>(pool);
 ```
 
-Retirer l'objet:
-Permet de retirer un **MUP_PoolObject** de type "Bullet" du poolLocator.
+Remove an object:
+Removes a **MUP_PoolObject** of type "Bullet" from the pool locator.
 ```c#
 MUP_ObjectPoolLocator.Remove<Bullet>(pool);
 ```
 
 
-Nettoyer le PoolLocator :
-Permet de vider le poolLocator.
+Clear the PoolLocator:
+Empties the pool locator.
 ```c#
 MUP_ObjectPoolLocator.Clear();
 ```

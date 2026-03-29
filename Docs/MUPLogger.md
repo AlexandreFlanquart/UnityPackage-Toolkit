@@ -1,17 +1,21 @@
 # MUPLogger
 
-Logger simple pour Unity avec support des logs éditeur.
+Simple logger for Unity with editor-log support.
 
 ## Configuration
 
 ```C#
 MUPLogger.Enabled = true;
-MUPLogger.GlobalPrefix = "[MonJeu]";
+MUPLogger.GlobalPrefix = "[MyGame]";
 MUPLogger.IncludeTimestamp = true;
 MUPLogger.MinimumLevel = MUPLogger.LogLevel.Info;
 ```
 
-## Niveau d'Information 
+## Recommended defaults
+- Use `MinimumLevel = Info` in production builds.
+- Use `MinimumLevel = Debug` during development (or for specific systems).
+
+## Log Levels 
 
 - Debug 
 - Info
@@ -19,34 +23,34 @@ MUPLogger.MinimumLevel = MUPLogger.LogLevel.Info;
 - Error 
 - Exception
 
-## Utilisation
+## Usage
 
 ```C#
-// Logs normaux - apparaissent partout
-MUPLogger.Info("Jeu initialisé");
-MUPLogger.Warning("Attention");
-MUPLogger.Error("Erreur");
+// Standard logs - appear everywhere
+MUPLogger.Info("Game initialized");
+MUPLogger.Warning("Warning");
+MUPLogger.Error("Error");
 
-// Logs éditeur uniquement - n'apparaissent que dans l'éditeur
+// Editor-only logs - shown only in the editor
 MUPLogger.Info("Debug info", editorOnly: true);
-MUPLogger.LogDebug("Position du joueur", editorOnly: true);
+MUPLogger.LogDebug("Player position", editorOnly: true);
 
-// Avec contexte Unity (clic direct vers l'objet)
-MUPLogger.Info("Joueur initialisé", this);
+// With Unity context (click directly to the object)
+MUPLogger.Info("Player initialized", this);
 
-// Gestion d'exceptions
+// Exception handling
 try
 {
-    // Code qui peut lever une exception
+    // Code that can throw
 }
 catch (Exception ex)
 {
-    MUPLogger.Exception(ex, this, editorOnly: true); // Stack trace détaillé
-    MUPLogger.Error("Erreur de chargement"); // Message simple pour l'utilisateur
+    MUPLogger.Exception(ex, this, editorOnly: true); // Detailed stack trace
+    MUPLogger.Error("Loading error"); // Simple message for the user
 }
 ```
 
-## Méthodes
+## Methods
 
 ```C#
 MUPLogger.LogDebug(message, context?, editorOnly?)
