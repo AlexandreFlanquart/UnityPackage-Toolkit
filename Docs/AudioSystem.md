@@ -114,7 +114,7 @@ Manages up to `MaxLayers` (3) independent looping ambience layers, each fading i
 
 Handles playback, streaming, and queuing of voice/dialogue clips. Supports local (`Resources`/`Assets`) and streamed (`StreamingAssets`) audio, caches loaded clips, and integrates with I2 Localization when present (`I2LOC_PRESENT`, auto-detected via the asmdef's `versionDefines`).
 
-- `PlayVoices(float delay, params string[] keys)`: plays one key immediately, or queues a sequence with a delay between each
+- `PlayVoices(float delay, params string[] keys)`: always routed through the internal queue (even a single key), so a call made while another sequence is still playing gets appended instead of hijacking the shared `AudioSource`
 - `ConfigVoiceElement(GameObject, float delay, params string[] keys)`: adds/configures a [`VoiceAgent`](#9-voiceagent) on a GameObject
 - `StopVoice()` / `Mute()` / `GetCurrentVoiceDuration()`
 - Clip resolution order: `Assets/Voices/{lang}/{key}` (editor only) → `Resources/Voices/{lang}/{key}` → `Resources/Voices/{key}` → `Resources/{key}`
@@ -176,14 +176,14 @@ MonoBehaviour service responsible for playing music, SFX, and voice through 3 fi
 
 **File:** [`Runtime/Scripts/Audio/AudioUpdater.cs`](../Runtime/Scripts/Audio/AudioUpdater.cs)
 
-MonoBehaviour component that manages the UI for audio control (volume slider, mute button, percentage text, mute sprites).
+MonoBehaviour component that manages the UI for audio control (volume slider, mute button, percentage text, mute sprites). Settings are fetched dynamically from `AudioManager` via `IAudioService.GetAudioSettingsFromAudioType(audioType)` — there is no `AudioSettingsSO` field to assign directly on this component.
 
-**Required:** `audioType`, `audioSettingsSO`. **Optional** (null-checked): `slider`, `muteButton`, `volumeText`, `muteText`, `isMuted`.
+**Required:** `audioType` (logs an error and skips slider setup if `slider` is left unassigned). **Optional** (null-checked): `muteButton`, `volumeText`, `muteText`, `isMuted`.
 
 #### Main methods:
-- `Initialize()`: initializes the component and configures listeners
-- `InjectAudioService(IAudioService)`: dependency injection
-- `InitVolumeUpdater()`: initializes the UI with default values
+- `InjectAudioService(IAudioService)`: dependency injection, replacing the default `AudioManagerService`
+- `InitVolumeUpdater()`: refreshes the UI from the current audio service state
+- Unsubscribes its slider/button listeners in `OnDestroy()`
 
 ### 14. AudioSettingsSO (ScriptableObject)
 
@@ -217,6 +217,7 @@ public class AudioSettingsSO : ScriptableObject
 1. Right-click in the Project window
 2. Create → ScriptableObjects → AudioSettingsSO
 3. Configure the default volume and sprites
+4. Place it at `Resources/AudioSettings/{Music|SFX|Voice|Ambience|UI}SettingsSO` so `AudioManager` auto-loads it on `Initialize()` — a missing SO for a channel just keeps that channel's hardcoded default volume, no error
 
 ### 3. Create an AudioCueSO
 
@@ -228,11 +229,10 @@ public class AudioSettingsSO : ScriptableObject
 
 1. Create a GameObject with the `AudioUpdater` script
 2. Assign the UI components:
-   - Slider for volume
-   - Button for mute
-   - TextMeshPro for display
-3. Assign the AudioSettingsSO
-4. Select the audio type (Music/SFX/Voice)
+   - Slider for volume (required — logs an error if left empty)
+   - Button for mute (optional)
+   - TextMeshPro for volume/mute text display (optional)
+3. Select the audio type (Music/SFX/Voice/Ambience/UI)
 
 ### 5. Playback managers setup
 

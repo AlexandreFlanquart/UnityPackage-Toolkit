@@ -1,11 +1,10 @@
-using System.Collections;
 using MyUnityPackage.Toolkit;
 using UnityEngine;
 
 public class GameManagerObjectPool : MonoBehaviour
 {
-    MUP_ObjectPool objectPooling ;
-    MUP_ObjectPool objectPooling2 ;
+    MUP_ObjectPool<Bullett> objectPooling;
+    MUP_ObjectPool<Transform> objectPooling2;
 
     [SerializeField] GameObject parent;
     [SerializeField] GameObject InactiveParent;
@@ -20,32 +19,36 @@ public class GameManagerObjectPool : MonoBehaviour
 
     void InitObjectPool1()
     {
-        objectPooling = new MUP_ObjectPool();
+        objectPooling = new MUP_ObjectPool<Bullett>();
         MUP_ObjectPoolLocator.Add<Bullett>(objectPooling);
-        objectPooling.Initialize(10, 20,20, parent.transform,prefab);
-        objectPooling.OnGetPoolAction += delegate {MUPLogger.Info("Je get depuis l'action");};
-        objectPooling.OnReturnPoolAction += delegate {MUPLogger.Info("Je release depuis l'action");};
-        objectPooling.OnReturnPoolAction += delegate {MUPLogger.Info("Je destroy depuis l'action");};
+        objectPooling.Initialize(10, 20, 20, parent.transform, prefab.GetComponent<Bullett>());
+        objectPooling.OnGetPoolAction += bullet => MUPLogger.Info($"Get {bullet.name} from the pool");
+        objectPooling.OnReturnPoolAction += bullet => MUPLogger.Info($"Release {bullet.name} to the pool");
+        objectPooling.OnDestroyPoolAction += bullet => MUPLogger.Info($"Destroy {bullet.name} from the pool");
     }
+
     public void AddToPool()
     {
-        GameObject go = objectPooling.Get();
-        go?.transform.SetParent(parent.transform);
+        Bullett bullet = objectPooling.Get();
+        bullet?.transform.SetParent(parent.transform);
     }
+
     public void RemoveToPool()
     {
-        int index = parent.transform.childCount-1;
-        if(index <0)
+        int index = parent.transform.childCount - 1;
+        if (index < 0)
             return;
+
         GameObject go = parent.transform.GetChild(index).gameObject;
         go.transform.SetParent(InactiveParent.transform);
-        objectPooling.Release(go);
-        
-
+        objectPooling.Release(go.GetComponent<Bullett>());
     }
+
+    // Demonstrates pooling a prefab with no distinguishing script by pooling its Transform directly —
+    // MUP_ObjectPool<T> works for any Component, not just custom scripts like Bullett.
     void InitObjectPool2()
     {
-        objectPooling2 = new MUP_ObjectPool();   
-        objectPooling2.Initialize(10, 10, 20,transform,(GameObject)Resources.Load("Cube")) ;
+        objectPooling2 = new MUP_ObjectPool<Transform>();
+        objectPooling2.Initialize(10, 10, 20, transform, ((GameObject)Resources.Load("Cube")).transform);
     }
 }

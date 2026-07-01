@@ -112,7 +112,9 @@ namespace MyUnityPackage.Toolkit
             ConfigVoiceElement(pElement, 0, pKeys);
         }
 
-        // Play a sequence of voices, optionally with a delay between them
+        // Play a sequence of voices, optionally with a delay between them.
+        // Always routed through the queue (even for a single key) so a call made while another
+        // sequence is already playing gets appended instead of hijacking the shared AudioSource directly.
         public bool PlayVoices(float pDelay, params string[] pKeys)
         {
             if (audioSource.mute || pKeys == null || pKeys.Length == 0)
@@ -120,15 +122,7 @@ namespace MyUnityPackage.Toolkit
                 return false;
             }
 
-            if (pKeys.Length > 1)
-            {
-                StartCoroutine(PlayVoicesQueued(pKeys, pDelay));
-            }
-            else
-            {
-                PlayVoice(pKeys[0]);
-            }
-
+            StartCoroutine(PlayVoicesQueued(pKeys, pDelay));
             return true;
         }
 
@@ -160,6 +154,10 @@ namespace MyUnityPackage.Toolkit
                 {
                     clipCache[cacheKey] = clip;
                 }
+                else
+                {
+                    MUPLogger.Warning($"VoiceManager: no AudioClip found for key '{pKey}' (checked Assets/Voices, Resources/Voices, and Resources root).");
+                }
                 PlayClip(clip);
             }   
         }
@@ -180,6 +178,7 @@ namespace MyUnityPackage.Toolkit
 
             audioSource.clip = pClip;
             audioSource.Play();
+            MUPLogger.Info($"VoiceManager: playing '{pClip.name}'.", this);
         }
 
         // Coroutine to play a queue of voices with optional delay between each

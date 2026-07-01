@@ -17,10 +17,11 @@ Abstract base class for all UI components.
 ```csharp
 public abstract class UI_Base : MonoBehaviour
 {
-    private CanvasHelper canvasHelper = default;
+    private CanvasHelper canvasHelper = default; // fetched in Awake()
 
-    public virtual void Show()    // Shows the canvas
-    public virtual void Hide()    // Hides the canvas
+    public bool IsVisible { get; }        // Current shown/hidden state
+    public virtual void Show()            // Shows the canvas
+    public virtual void Hide()            // Hides the canvas
 }
 ```
 
@@ -41,7 +42,8 @@ Handles showing/hiding canvases with interaction support.
 **Features:**
 - Enables/disables the `Canvas`
 - Controls `CanvasGroup.interactable` and `CanvasGroup.blocksRaycasts`
-- `hideOnStart` option to automatically hide at startup
+- `hideOnStart` option to automatically hide at startup — applied explicitly on `Awake()` either way, so `Canvas`/`CanvasGroup` never start out of sync even if authored inconsistently in the Inspector
+- `IsVisible` read-only property to query the current state
 
 
 

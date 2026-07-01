@@ -210,7 +210,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parent: {fileID: 306580288}
   InactiveParent: {fileID: 2012580214}
-  prefab: {fileID: 2225360793054984781, guid: 5ae2e878dfa54224995d89c266abe8bf, type: 3}
+  prefab: {fileID: 7148638355356141550, guid: 96490660b1f146d4fbeadba6a95fdbf4, type: 3}
 --- !u!4 &822351920
 Transform:
   m_ObjectHideFlags: 0

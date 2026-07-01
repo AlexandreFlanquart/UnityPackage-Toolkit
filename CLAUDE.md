@@ -40,6 +40,7 @@ Every MonoBehaviour service registers itself in `Awake` and unregisters in `OnDe
 void Awake() => ServiceLocator.AddService<MyService>(gameObject, replaceExisting: true);
 void OnDestroy() => ServiceLocator.RemoveService<MyService>(this);
 ```
+`AddService` throws `InvalidOperationException` if a live service of that type is already registered and `replaceExisting` is left `false` (the default) — pass `true` for the standard self-registering pattern above.
 Call `ServiceLocator.Clear()` on scene unload to prevent stale references — this is **not** done automatically.
 
 ### Logging
@@ -63,7 +64,7 @@ The audio system has two layers:
 Manages `AudioType` enum: `Music | SFX | Voice | Ambience | UI`.  
 Maps each type to an AudioMixer exposed float parameter **named exactly** after the enum value string (`"Music"`, `"SFX"`, etc.).  
 The mixer asset must live at `Resources/AudioMixer`.  
-Per-channel `AudioSettingsSO` assets auto-load from `Resources/AudioSettings/{Music|SFX|Voice}SettingsSO`.
+Per-channel `AudioSettingsSO` assets auto-load from `Resources/AudioSettings/{Music|SFX|Voice|Ambience|UI}SettingsSO` — a missing SO just keeps that channel's hardcoded default volume.
 
 ### Playback managers (ServiceLocator)
 
@@ -95,23 +96,29 @@ For ducking (voice over music), wire an **Audio Mixer Send** from the Voice grou
 
 ## Object pool system
 
+`MUP_ObjectPool<T>` is generic over any `Component` type — use a custom script (`Bullet`) or, for a prefab
+with no distinguishing script, `Transform` (every GameObject has one).
+
 ```csharp
 // Create
-var pool = new MUP_ObjectPool();
-pool.Initialize(baseSizeQueue: 10, maxSizeQueue: 20, maxSizeActive: 20, parent.transform, prefab);
+var pool = new MUP_ObjectPool<Bullet>();
+pool.Initialize(baseSizeQueue: 10, maxSizeQueue: 20, maxSizeActive: 20, parent.transform, prefab.GetComponent<Bullet>());
 MUP_ObjectPoolLocator.Add<Bullet>(pool);
 
 // Use
-GameObject go = MUP_ObjectPoolLocator.Get<Bullet>().Get();
-MUP_ObjectPoolLocator.Get<Bullet>().Release(go); // never Destroy()
+Bullet bullet = MUP_ObjectPoolLocator.Get<Bullet>().Get(); // null if maxSizeActive is reached
+MUP_ObjectPoolLocator.Get<Bullet>().Release(bullet); // never Destroy()
 ```
 
-Pooled objects must reset their own state (position, rotation, particles) when reused.
+`baseSizeQueue` is only a capacity hint — instances are created lazily on first `Get()`, not pre-warmed by
+`Initialize()`. `maxSizeActive` of 0 or less means no cap. `OnGetPoolAction`/`OnReturnPoolAction`/`OnDestroyPoolAction`
+(`Action<T>`) receive the instance so pooled objects can reset their own state (position, rotation, particles)
+when reused — do this on get, not in `Awake`/`OnEnable` (pooled instances only run those once).
 
 ## UI system
 
-- `UI_Base` — abstract base for all canvases; exposes `Show()` / `Hide()` via `CanvasHelper`.
-- `CanvasHelper` — requires `Canvas` + `CanvasGroup` on the same GameObject; toggles both `enabled` and `interactable`/`blocksRaycasts`.
+- `UI_Base` — abstract base for all canvases; exposes `Show()` / `Hide()` / `IsVisible` via `CanvasHelper` (fetched in `Awake`, not `Start`).
+- `CanvasHelper` — requires `Canvas` + `CanvasGroup` on the same GameObject; toggles both `enabled` and `interactable`/`blocksRaycasts` together, always explicitly on `Awake` (not just when `hideOnStart` is true) so the two never start out of sync.
 - `UIButtonSound` — assign a `AudioCueSO` (`clickCue`) for sounds; falls back to a raw `AudioClip` via `AudioPlaybackService` if no cue is set.
 
 ## Timer system
@@ -120,7 +127,9 @@ Pooled objects must reset their own state (position, rotation, particles) when r
 - `Countdown` — decreases from `duration` to 0.
 - `Stopwatch` — increases from 0 to `duration`.
 
-Bind a `TextMeshProUGUI` and/or a `Slider` in the Inspector; the component drives them automatically.
+Bind a `TextMeshProUGUI` and/or a `Slider` in the Inspector; the component drives them automatically. Enable `useUnscaledTime` if the timer must keep running while `Time.timeScale` is 0 (e.g. pause menus).
+
+Read `Duration` / `Mode` (public getters); use `SetDuration` / `SetMode` to change them. Both support `restart: false` to keep the timer running — elapsed time is preserved and correctly re-expressed across the mode switch (`ClampAtEnd` bounds `currentTime` to `[0, duration]` in both modes).
 
 ## Code conventions
 

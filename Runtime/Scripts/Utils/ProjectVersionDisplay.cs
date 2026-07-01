@@ -1,13 +1,19 @@
 using TMPro;
 using UnityEngine;
 
-[RequireComponent(typeof(TextMeshProUGUI))]
-public sealed class ProjectVersionDisplay : MonoBehaviour
+namespace MyUnityPackage.Toolkit
 {
-    [SerializeField] private string prefix = "Version ";
-
-    private void Awake()
+    /// <summary>Displays <see cref="Application.version"/> on a bound <see cref="TextMeshProUGUI"/> label.</summary>
+    [RequireComponent(typeof(TextMeshProUGUI))]
+    public sealed class ProjectVersionDisplay : MonoBehaviour
     {
-        GetComponent<TextMeshProUGUI>().text = prefix + Application.version;
+        [SerializeField] private string prefix = "Version ";
+
+        private void Awake()
+        {
+            string text = prefix + Application.version;
+            GetComponent<TextMeshProUGUI>().text = text;
+            MUPLogger.Info($"ProjectVersionDisplay: displaying '{text}'.", this);
+        }
     }
 }
