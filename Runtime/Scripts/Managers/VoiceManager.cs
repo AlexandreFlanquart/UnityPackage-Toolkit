@@ -44,6 +44,8 @@ namespace MyUnityPackage.Toolkit
             ServiceLocator.AddService<VoiceManager>(gameObject);
             if (audioSource == null)
                 audioSource = GetComponent<AudioSource>();
+            if (audioSource.outputAudioMixerGroup == null)
+                audioSource.outputAudioMixerGroup = AudioManager.GetAudioMixerGroup(AudioManager.AudioType.Voice);
             audioSource.volume = globalVolume;
 #if I2LOC_PRESENT
             LocalizationManager.OnLocalizeEvent.AddListener(OnLanguageChanged);
@@ -66,6 +68,32 @@ namespace MyUnityPackage.Toolkit
             MUPLogger.Info("VoiceManager: language changed, cache cleared.");
         }
 #endif
+
+        // Single place to branch on I2Loc presence for path/key building, instead of
+        // scattering #if blocks across every caller below.
+        private static string LanguagePathPrefix
+        {
+            get
+            {
+#if I2LOC_PRESENT
+                return LocalizationManager.CurrentLanguageCode + "/";
+#else
+                return string.Empty;
+#endif
+            }
+        }
+
+        private static string CacheKeyPrefix
+        {
+            get
+            {
+#if I2LOC_PRESENT
+                return LocalizationManager.CurrentLanguageCode + "_";
+#else
+                return string.Empty;
+#endif
+            }
+        }
 
         // Configure a GameObject as a VoiceAgent with delay and keys
         public void ConfigVoiceElement(GameObject pElement, float pDelay, params string[] pKeys)
@@ -113,21 +141,13 @@ namespace MyUnityPackage.Toolkit
       
             if(audioStreaming)
             {
-                #if I2LOC_PRESENT
-                    string audioUrl = Application.streamingAssetsPath + $"/Voices/{LocalizationManager.CurrentLanguageCode}/{pKey}.mp3";
-                #else
-                    string audioUrl = Application.streamingAssetsPath + $"/Voices/{pKey}.mp3";
-                #endif
+                string audioUrl = Application.streamingAssetsPath + $"/Voices/{LanguagePathPrefix}{pKey}.mp3";
                 StartCoroutine(AudioStreaming(audioUrl));
                 return;
             }
             else
             {
-#if I2LOC_PRESENT
-                string cacheKey = $"{LocalizationManager.CurrentLanguageCode}_{pKey}";
-#else
-                string cacheKey = pKey;
-#endif
+                string cacheKey = $"{CacheKeyPrefix}{pKey}";
                 if (clipCache.TryGetValue(cacheKey, out AudioClip cachedClip))
                 {
                     PlayClip(cachedClip);
@@ -284,22 +304,16 @@ namespace MyUnityPackage.Toolkit
         {
             AudioClip clip = null;
 #if UNITY_EDITOR
-#if I2LOC_PRESENT
-            string editorPath = $"Assets/Voices/{LocalizationManager.CurrentLanguageCode}/{pKey}";
-#else
-            string editorPath = $"Assets/Voices/{pKey}";
-#endif
+            string editorPath = $"Assets/Voices/{LanguagePathPrefix}{pKey}";
             clip = AssetDatabase.LoadAssetAtPath<AudioClip>(editorPath);
 #endif
             if (clip == null)
             {
-#if I2LOC_PRESENT
-                clip = Resources.Load<AudioClip>($"Voices/{LocalizationManager.CurrentLanguageCode}/{pKey}");
+                clip = Resources.Load<AudioClip>($"Voices/{LanguagePathPrefix}{pKey}");
+                if (clip == null && !string.IsNullOrEmpty(LanguagePathPrefix))
+                    clip = Resources.Load<AudioClip>($"Voices/{pKey}");
                 if (clip == null)
-                    clip = Resources.Load<AudioClip>($"Voices/{pKey}") ?? Resources.Load<AudioClip>(pKey);
-#else
-                clip = Resources.Load<AudioClip>($"Voices/{pKey}") ?? Resources.Load<AudioClip>(pKey);
-#endif
+                    clip = Resources.Load<AudioClip>(pKey);
             }
 
             return clip;

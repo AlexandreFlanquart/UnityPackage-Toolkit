@@ -13,7 +13,9 @@ namespace MyUnityPackage.Toolkit
         {
             Music,
             SFX,
-            Voice
+            Voice,
+            Ambience,
+            UI
         }
         public class AudioSetting
         {
@@ -45,11 +47,13 @@ namespace MyUnityPackage.Toolkit
         private static AudioSetting musicSetting;
         private static AudioSetting sfxSetting;
         private static AudioSetting voiceSetting;
+        private static AudioSetting ambienceSetting;
+        private static AudioSetting uiSetting;
         private static Dictionary<AudioType, AudioSetting> audioSettings;
 
         private static void EnsureInitialized()
         {
-            if (audioSettings == null || musicSetting == null || sfxSetting == null || voiceSetting == null)
+            if (audioSettings == null)
             {
                 Initialize();
             }
@@ -71,14 +75,18 @@ namespace MyUnityPackage.Toolkit
         /// </summary>
         public static void Initialize()
         {
-            musicSetting = new AudioSetting { AUDIO_NAME = AudioType.Music.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            sfxSetting = new AudioSetting { AUDIO_NAME = AudioType.SFX.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            voiceSetting = new AudioSetting { AUDIO_NAME = AudioType.Voice.ToString(), defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            musicSetting    = new AudioSetting { AUDIO_NAME = AudioType.Music.ToString(),    defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            sfxSetting      = new AudioSetting { AUDIO_NAME = AudioType.SFX.ToString(),      defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            voiceSetting    = new AudioSetting { AUDIO_NAME = AudioType.Voice.ToString(),     defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
+            ambienceSetting = new AudioSetting { AUDIO_NAME = AudioType.Ambience.ToString(), defaultVolume = 0.7f, currentVolume = 0.7f, isMuted = false };
+            uiSetting       = new AudioSetting { AUDIO_NAME = AudioType.UI.ToString(),       defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
             audioSettings = new Dictionary<AudioType, AudioSetting>
             {
-                { AudioType.Music, musicSetting },
-                { AudioType.SFX, sfxSetting },
-                { AudioType.Voice, voiceSetting }
+                { AudioType.Music,    musicSetting    },
+                { AudioType.SFX,      sfxSetting      },
+                { AudioType.Voice,    voiceSetting    },
+                { AudioType.Ambience, ambienceSetting },
+                { AudioType.UI,       uiSetting       }
             };
             LoadAndApplyAudioSettingsSO();
         }

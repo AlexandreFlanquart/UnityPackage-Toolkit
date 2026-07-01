@@ -4,6 +4,10 @@
 
 The UnityPackage-Toolkit audio system provides a modular, extensible architecture for managing audio in Unity. It uses the Service Locator pattern and dependency injection to improve testability and flexibility.
 
+The system has two layers:
+1. **Volume/mute** — `AudioManager` (static) controls the Unity AudioMixer's exposed parameters.
+2. **Playback** — dedicated `MonoBehaviour` managers, one per channel, each registered via `ServiceLocator`.
+
 ## Architecture
 
 ### Architecture diagram
@@ -20,7 +24,26 @@ The UnityPackage-Toolkit audio system provides a modular, extensible architectur
 │ AudioSettingsSO │    │AudioManagerService│    │   AudioMixer    │
 │ (Configuration) │    │ (Implementation) │    │  (Unity Audio)  │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
+
+┌───────────────┐  ┌─────────────┐  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐
+│ MusicManager  │  │ SFXManager  │  │ UIAudioManager │  │ AmbienceManager│  │ VoiceManager │
+│ (crossfade)   │  │ (pool)      │  │ (PlayOneShot)  │  │ (3 loops)      │  │ (queue)      │
+└───────┬───────┘  └──────┬──────┘  └────────┬───────┘  └────────┬───────┘  └──────┬───────┘
+        └─────────────────┴──────────────────┴───────────────────┴─────────────────┘
+                                              │
+                                       AudioCueSO (sound definition)
 ```
+
+### Playback managers (ServiceLocator)
+
+| Manager | Sources | Use for |
+|---|---|---|
+| `MusicManager` | 2 (A/B crossfade) | Background music, smooth transitions |
+| `AmbienceManager` | 3 independent loops | Environmental layers (wind, rain, crowd) |
+| `SFXManager` | Pool of 16 | One-shot game SFX, 2D or fire-and-forget 3D |
+| `UIAudioManager` | 1 (`PlayOneShot`) | UI clicks, hover — stacks without interruption |
+| `VoiceManager` | 1 (queue) | Dialogue, narration, streaming, I2LOC language paths |
+| `AudioPlaybackService` | 3 (Music/SFX/Voice) | **Legacy** — kept for backward compatibility |
 
 ## Main Components
 
@@ -28,114 +51,145 @@ The UnityPackage-Toolkit audio system provides a modular, extensible architectur
 
 **File:** [`Runtime/Scripts/Managers/AudioManager.cs`](../Runtime/Scripts/Managers/AudioManager.cs)
 
-`AudioManager` is the core of the audio system. It manages settings for three audio types: Music, SFX, and Voice.
+`AudioManager` is the core of the audio system. It manages volume/mute settings for five audio channels: `Music`, `SFX`, `Voice`, `Ambience`, and `UI`.
 
 #### Key features:
 - **Volume management**: control volume per audio type
 - **Mute management**: enable/disable sound
 - **dB conversion**: convert between linear values (0–1) and decibels (-80 to 0)
 - **Lazy initialization**: initializes settings on demand
+- **Mixer group lookup**: `GetAudioMixerGroup(AudioType)` resolves the matching `AudioMixerGroup` for playback managers to route their `AudioSource`s
 
 #### Main public methods:
-- `Initialize()`: initializes the system with default volumes (0.8f)
-- `SetVolume(AudioType, float)`: sets the volume for an audio type
-- `GetVolume(AudioType)`: gets the current volume
+- `Initialize()`: initializes the system with default volumes (0.8f for Music/SFX/Voice/UI, 0.7f for Ambience)
+- `SetVolume(AudioType, float)` / `GetVolume(AudioType)`: set/get the volume for a channel
 - `ToggleMute(AudioType)`: toggles mute
 - `GetAudioSettingsFromAudioType(AudioType)`: retrieves the full settings object
+- `GetAudioMixerGroup(AudioType)`: resolves the `AudioMixerGroup` matching a channel name
 
-### 2. IAudioService (interface)
+### 2. MusicManager
 
-**File:** [`Runtime/Scripts/Audio/IAudioService.cs`](../Runtime/Scripts/Audio/IAudioService.cs)
+**File:** [`Runtime/Scripts/Managers/MusicManager.cs`](../Runtime/Scripts/Managers/MusicManager.cs)
 
-Interface defining the contract for audio services, enabling dependency injection and testability.
+Crossfades background music between two internal `AudioSource`s (A/B) so the outgoing track fades out while the incoming one fades in.
 
-#### Defined methods:
-```csharp
-public interface IAudioService
-{
-    void InitVolume(AudioManager.AudioType audioType, float volume);
-    void SetVolume(AudioManager.AudioType audioType, float volume);
-    float GetVolume(AudioManager.AudioType audioType);
-    void ToggleMute(AudioManager.AudioType audioType);
-    AudioManager.AudioSetting GetAudioSettingsFromAudioType(AudioManager.AudioType audioType);
-}
-```
+- `Play(AudioClip clip, float crossfadeDuration = -1f)` / `Play(AudioCueSO cue, float crossfadeDuration = -1f)`
+- `Stop(float fadeDuration = 1f)`
 
-### 3. AudioManagerService (implementation)
+### 3. SFXManager
 
-**File:** [`Runtime/Scripts/Audio/AudioManagerService.cs`](../Runtime/Scripts/Audio/AudioManagerService.cs)
+**File:** [`Runtime/Scripts/Managers/SFXManager.cs`](../Runtime/Scripts/Managers/SFXManager.cs)
 
-Default implementation of `IAudioService` that delegates all operations to the static `AudioManager`.
+Pool-based manager (default 16 `AudioSource`s) for one-shot SFX, 2D or 3D. Respects each `AudioCueSO`'s cooldown, max-instance limit, and priority.
 
-```csharp
-public class AudioManagerService : IAudioService
-{
-    public void SetVolume(AudioManager.AudioType audioType, float volume)
-        => AudioManager.SetVolume(audioType, volume);
-    // ... other methods
-}
-```
+- `Play(AudioCueSO cue, Vector3? position = null)`: plays a cue, 3D if a position is given
+- `PlayRaw(AudioClip clip, AudioType audioType, float volume = 1f, float pitch = 1f, Vector3? position = null)`: bypasses cue rules
+- `SFXStealStrategy`: `DropNew` or `StealOldest` — behaviour when the pool is full
 
-### 4. AudioPlaybackService (playback service)
+### 4. UIAudioManager
+
+**File:** [`Runtime/Scripts/Managers/UIAudioManager.cs`](../Runtime/Scripts/Managers/UIAudioManager.cs)
+
+Dedicated channel for UI sounds (clicks, hovers). Uses `AudioSource.PlayOneShot` so rapid clicks stack without interrupting each other.
+
+- `Play(AudioCueSO cue)`: plays a UI cue
+- `PlayClick()`: plays the Inspector-assigned `defaultClickCue`
+- `PlayRaw(AudioClip clip, float volume = 1f)`: raw clip, no cooldown/instance tracking
+
+Consumed by [`UIButtonSound`](#8-uibuttonsound) so buttons get sound with no extra wiring.
+
+### 5. AmbienceManager
+
+**File:** [`Runtime/Scripts/Managers/AmbienceManager.cs`](../Runtime/Scripts/Managers/AmbienceManager.cs)
+
+Manages up to `MaxLayers` (3) independent looping ambience layers, each fading in/out on its own so they can be blended dynamically by gameplay (e.g. indoor/outdoor, weather).
+
+- `SetLayer(int layerIndex, AudioClip clip, float targetVolume = 1f, float fadeDuration = 1f)`: pass `null` clip to fade out and clear the layer
+- `SetLayerVolume(int layerIndex, float targetVolume, float fadeDuration = 0.5f)`
+- `StopAll(float fadeDuration = 1f)`
+
+### 6. VoiceManager
+
+**File:** [`Runtime/Scripts/Managers/VoiceManager.cs`](../Runtime/Scripts/Managers/VoiceManager.cs)
+
+Handles playback, streaming, and queuing of voice/dialogue clips. Supports local (`Resources`/`Assets`) and streamed (`StreamingAssets`) audio, caches loaded clips, and integrates with I2 Localization when present (`I2LOC_PRESENT`, auto-detected via the asmdef's `versionDefines`).
+
+- `PlayVoices(float delay, params string[] keys)`: plays one key immediately, or queues a sequence with a delay between each
+- `ConfigVoiceElement(GameObject, float delay, params string[] keys)`: adds/configures a [`VoiceAgent`](#9-voiceagent) on a GameObject
+- `StopVoice()` / `Mute()` / `GetCurrentVoiceDuration()`
+- Clip resolution order: `Assets/Voices/{lang}/{key}` (editor only) → `Resources/Voices/{lang}/{key}` → `Resources/Voices/{key}` → `Resources/{key}`
+
+### 7. AudioCueSO (ScriptableObject)
+
+**File:** [`Runtime/Scripts/ScriptableObjects/AudioCue/AudioCueSO.cs`](../Runtime/Scripts/ScriptableObjects/AudioCue/AudioCueSO.cs)
+
+The central sound definition consumed by `MusicManager`, `SFXManager`, and `UIAudioManager`. Create via **Assets > Create > MyUnityPackage > Audio > AudioCue**.
+
+- **Clips**: one or more variants; `GetClip()` avoids repeating the same clip twice in a row
+- **Volume/Pitch randomisation**: `baseVolume` × `volumeVariation` range, `pitchRange`
+- **Concurrency**: `cooldown` (min seconds between plays), `maxInstances`, `priority` (used for voice-stealing in `SFXManager`)
+
+`CanPlay()` / `OnPlay()` / `OnStop()` are called internally by the managers — do not call them manually.
+
+### 8. UIButtonSound
+
+**File:** [`Runtime/Scripts/UI/UIButtonSound.cs`](../Runtime/Scripts/UI/UIButtonSound.cs)
+
+Plays a sound when the attached `Button` is clicked. Assign `clickCue` (`AudioCueSO`, preferred — routes through `UIAudioManager`) or `clickClip` (legacy raw clip, routes through `AudioPlaybackService`) as a fallback.
+
+> ⚠️ Upgrading from an older version: the previous `clickSound` field was replaced by `clickCue`/`clickClip` — re-assign it on existing buttons.
+
+### 9. VoiceAgent
+
+**File:** [`Runtime/Scripts/Audio/VoiceAgent.cs`](../Runtime/Scripts/Audio/VoiceAgent.cs)
+
+Specialized component for triggering dialogue on a GameObject — on enable, on hover, or manually.
+
+- **Automatic playback**: on enable and/or on pointer hover
+- **Delay management**: delay before playback
+- **Automatic stop**: stops when disabled
+- **ServiceLocator integration**: uses `VoiceManager`
+
+### 10. AudioFocusHandler
+
+**File:** [`Runtime/Scripts/Managers/AudioFocusHandler.cs`](../Runtime/Scripts/Managers/AudioFocusHandler.cs)
+
+Pauses the Unity `AudioListener` when the application loses focus or is suspended (`OnApplicationPause` on mobile, `OnApplicationFocus` on desktop). Add once to the audio system GameObject.
+
+### 11. IAudioService / AudioManagerService
+
+**Files:** [`Runtime/Scripts/Audio/IAudioService.cs`](../Runtime/Scripts/Audio/IAudioService.cs), [`Runtime/Scripts/Audio/AudioManagerService.cs`](../Runtime/Scripts/Audio/AudioManagerService.cs)
+
+Interface + default implementation exposing `AudioManager`'s volume/mute API for dependency injection and testability (consumed by `AudioUpdater`).
+
+### 12. AudioPlaybackService (legacy)
 
 **File:** [`Runtime/Scripts/Audio/AudioPlaybackService.cs`](../Runtime/Scripts/Audio/AudioPlaybackService.cs)
 
-MonoBehaviour service responsible for playing music, sound effects, and voices.
+MonoBehaviour service responsible for playing music, SFX, and voice through 3 fixed `AudioSource`s. Kept for backward compatibility — prefer `MusicManager` / `SFXManager` / `UIAudioManager` / `VoiceManager` for new code.
 
-#### Key features:
-- **Per-channel playback**: dedicated audio source for music, SFX, and voice
-- **AudioMixer compatibility**: automatically assigns the corresponding mixer group (Music/SFX/Voice) when available
-- **Resources loading**: can load and play a clip directly from the `Resources` folder
-- **Loop or one-shot**: fine control via `loop` and `volume` parameters
-- **Global stop**: methods to stop a specific channel or all channels
+- `PlayClip(AudioClip, AudioType, bool loop = false, float volume = 1f)` / `PlayFromResources(string path, AudioType, bool loop = false, float volume = 1f)`
+- Helpers `PlayMusic`, `PlaySFX`, `PlayVoice`
+- `Stop(AudioType)` / `StopAll()`
 
-#### Main methods:
-- `PlayClip(AudioClip, AudioType, bool loop = false, float volume = 1f)`: plays a clip on the desired channel
-- `PlayFromResources(string path, AudioType, bool loop = false, float volume = 1f)`: loads a clip from `Resources` and plays it immediately
-- Helpers `PlayMusic`, `PlaySFX`, and `PlayVoice`: shortcuts for the most common channels
-- `Stop(AudioType)` / `StopAll()`: stops playback on a channel or all channels
-
-> ⚠️ **Tip:** add this component to a GameObject in your scene (e.g., `AudioSystem`) to expose the service via the `ServiceLocator`.
-> You can then retrieve it in your scripts with `ServiceLocator.GetService<AudioPlaybackService>()`.
-
-### 5. AudioUpdater (UI component)
+### 13. AudioUpdater (UI component)
 
 **File:** [`Runtime/Scripts/Audio/AudioUpdater.cs`](../Runtime/Scripts/Audio/AudioUpdater.cs)
 
-MonoBehaviour component that manages the UI for audio control.
+MonoBehaviour component that manages the UI for audio control (volume slider, mute button, percentage text, mute sprites).
 
-#### Features:
-- **Volume slider**: visual volume control
-- **Mute button**: toggles sound on/off
-- **Volume display**: text showing the percentage
-- **Mute images**: sprites for mute/unmute states
-- **Service injection**: ability to inject a custom service
-
-#### Required setup:
-
-**REQUIRED variables:**
-- `audioType`: audio type to control (Music/SFX/Voice)
-- `audioSettingsSO`: settings configuration (ScriptableObject)
-
-**OPTIONAL variables:**
-- `slider`: UI Slider component for volume control
-- `muteButton`: button to toggle mute
-- `volumeText`: text showing the volume percentage
-- `muteText`: label for the mute button ("Mute"/"Unmute")
-- `isMuted`: initial mute state (bool)
-
-> ⚠️ **Important:** required variables must be assigned in the Inspector; otherwise the component will not work correctly. Optional variables are guarded with null checks in the code.
+**Required:** `audioType`, `audioSettingsSO`. **Optional** (null-checked): `slider`, `muteButton`, `volumeText`, `muteText`, `isMuted`.
 
 #### Main methods:
 - `Initialize()`: initializes the component and configures listeners
 - `InjectAudioService(IAudioService)`: dependency injection
 - `InitVolumeUpdater()`: initializes the UI with default values
 
-### 6. AudioSettingsSO (ScriptableObject)
+### 14. AudioSettingsSO (ScriptableObject)
 
 **File:** [`Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs`](../Runtime/Scripts/ScriptableObjects/AudioSettings/AudioSettingsSO.cs)
 
-Audio settings configured via a ScriptableObject.
+Per-channel audio settings configured via a ScriptableObject.
 
 ```csharp
 [CreateAssetMenu(fileName = "AudioSettingsSO", menuName = "ScriptableObjects/AudioSettingsSO")]
@@ -148,28 +202,15 @@ public class AudioSettingsSO : ScriptableObject
 }
 ```
 
-### 7. VoiceAgent (audio component)
-
-**File:** [`Runtime/Scripts/Audio/VoiceAgent.cs`](../Runtime/Scripts/Audio/VoiceAgent.cs)
-
-Specialized component for managing voice and dialogue.
-
-#### Features:
-- **Automatic playback**: plays on hover or activation
-- **Delay management**: delay before playback
-- **Automatic stop**: stops when disabled
-- **ServiceLocator integration**: uses VoiceManager via ServiceLocator
-
 ## Setup and Usage
 
 ### 1. AudioMixer setup
 
 1. Create an AudioMixer in Unity
-2. Expose the following parameters:
-   - `Music` (float)
-   - `SFX` (float)
-   - `Voice` (float)
-3. Place the AudioMixer in `Resources/AudioMixer`
+2. Create groups: `Music`, `Ambience`, `SFX` (optionally with children `SFX/World`, `SFX/UI`), `Voice`
+3. Expose float parameters named exactly `Music`, `SFX`, `Voice`, `Ambience`, `UI` (these names are matched against `AudioManager.AudioType`)
+4. Place the AudioMixer asset at `Resources/AudioMixer`
+5. Optional — voice ducking: wire an **Audio Mixer Send** from the Voice group into a **Duck Volume** effect on the Music and Ambience groups (no code required)
 
 ### 2. Create an AudioSettingsSO
 
@@ -177,7 +218,13 @@ Specialized component for managing voice and dialogue.
 2. Create → ScriptableObjects → AudioSettingsSO
 3. Configure the default volume and sprites
 
-### 3. Audio UI setup
+### 3. Create an AudioCueSO
+
+1. Right-click in the Project window
+2. Create → MyUnityPackage → Audio → AudioCue
+3. Assign one or more clips, pick the `AudioType`, and tune volume/pitch variation, cooldown, and max instances
+
+### 4. Audio UI setup
 
 1. Create a GameObject with the `AudioUpdater` script
 2. Assign the UI components:
@@ -187,3 +234,6 @@ Specialized component for managing voice and dialogue.
 3. Assign the AudioSettingsSO
 4. Select the audio type (Music/SFX/Voice)
 
+### 5. Playback managers setup
+
+Add `MusicManager`, `SFXManager`, `UIAudioManager`, `AmbienceManager`, `VoiceManager` (as needed) and `AudioFocusHandler` to a single persistent `AudioSystem` GameObject. Each manager registers itself in `ServiceLocator` on `Awake`, so it can be retrieved anywhere with `ServiceLocator.GetService<T>()`. See the `AudioExampleScene` sample for a complete working setup.

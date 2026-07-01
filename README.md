@@ -1,7 +1,7 @@
 ﻿# UnityPackage-Toolkit
 
 ## Description
-**UnityPackage-Toolkit** is a comprehensive Unity package that provides a set of essential tools to quickly start a new project. It includes advanced audio systems, UI management, object pooling, and much more.
+**UnityPackage-Toolkit** is a comprehensive Unity package that provides a set of essential tools to quickly start a new project. It includes advanced audio systems (music, SFX, ambience, voice, UI sounds), UI management, object pooling, and much more.
 
 This toolkit is designed for developers who want a solid, modular foundation for their Unity projects, with ready-to-use, optimized features.
 
@@ -9,7 +9,7 @@ This toolkit is designed for developers who want a solid, modular foundation for
 
 Detailed documentation for each system is available in the `Docs/` folder:
 
-- [Docs/AudioSystem.md](Docs/AudioSystem.md): setup of the AudioManager, AudioPlaybackService, VoiceManager, AudioUpdater, and AudioMixer integration.
+- [Docs/AudioSystem.md](Docs/AudioSystem.md): `AudioManager` (volume/mute), per-channel playback managers (`MusicManager`, `SFXManager`, `UIAudioManager`, `AmbienceManager`, `VoiceManager`), `AudioCueSO` sound definitions, and AudioMixer integration.
 - [Docs/UISystem.md](Docs/UISystem.md): UI canvas management helpers and base classes.
 - [Docs/ServiceLocator.md](Docs/ServiceLocator.md): ServiceLocator pattern, creation, and lifecycle of services.
 - [Docs/ObjectPool.md](Docs/ObjectPool.md): object pooling and a pool locator helper.
@@ -41,10 +41,10 @@ https://github.com/AlexandreFlanquart/UnityPackage-Toolkit.git#v1.0.2
 To see the latest package updates, check out [CHANGELOG.md](CHANGELOG.md)!
 
 ## Examples
-The package includes complete examples in the `Samples~` folder:
-- UI prefabs
-- Example scenes
-- Demo scripts
+The package includes complete examples in the `Samples~` folder (import them from **Package Manager > UnityPackage-Toolkit > Samples**):
+- `AudioExampleScene`: Music (crossfade), SFX (pooled), UI click, and Voice playback wired to the audio managers
+- `ObjectPoolScene`: object pooling in action
+- UI prefabs and demo scripts
 
 ## Troubleshooting
 If you encounter an issue, report it to the development team.
