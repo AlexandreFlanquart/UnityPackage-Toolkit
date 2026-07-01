@@ -5,6 +5,9 @@ using UnityEditor;
 #endif
 using UnityEngine;
 using UnityEngine.Networking;
+#if I2LOC_PRESENT
+using I2.Loc;
+#endif
 
 namespace MyUnityPackage.Toolkit
 {
@@ -42,14 +45,27 @@ namespace MyUnityPackage.Toolkit
             if (audioSource == null)
                 audioSource = GetComponent<AudioSource>();
             audioSource.volume = globalVolume;
+#if I2LOC_PRESENT
+            LocalizationManager.OnLocalizeEvent.AddListener(OnLanguageChanged);
+#endif
         }
 
-        // Clean up cached audio clips when destroyed
         void OnDestroy()
         {
             ServiceLocator.RemoveService<VoiceManager>(this);
+#if I2LOC_PRESENT
+            LocalizationManager.OnLocalizeEvent.RemoveListener(OnLanguageChanged);
+#endif
             ClearCache();
         }
+
+#if I2LOC_PRESENT
+        private void OnLanguageChanged()
+        {
+            ClearCache();
+            MUPLogger.Info("VoiceManager: language changed, cache cleared.");
+        }
+#endif
 
         // Configure a GameObject as a VoiceAgent with delay and keys
         public void ConfigVoiceElement(GameObject pElement, float pDelay, params string[] pKeys)
@@ -107,7 +123,12 @@ namespace MyUnityPackage.Toolkit
             }
             else
             {
-                if (clipCache.TryGetValue(pKey, out AudioClip cachedClip))
+#if I2LOC_PRESENT
+                string cacheKey = $"{LocalizationManager.CurrentLanguageCode}_{pKey}";
+#else
+                string cacheKey = pKey;
+#endif
+                if (clipCache.TryGetValue(cacheKey, out AudioClip cachedClip))
                 {
                     PlayClip(cachedClip);
                     return;
@@ -117,7 +138,7 @@ namespace MyUnityPackage.Toolkit
 
                 if (clip != null)
                 {
-                    clipCache[pKey] = clip;
+                    clipCache[cacheKey] = clip;
                 }
                 PlayClip(clip);
             }   
@@ -212,12 +233,13 @@ namespace MyUnityPackage.Toolkit
             return audioSource.clip != null ? audioSource.clip.length : 0f;
         }
 
-        // Clear and unload all cached audio clips
+        // Clear and unload all cached audio clips, preserving the currently playing clip
         private void ClearCache()
         {
+            AudioClip currentClip = audioSource != null ? audioSource.clip : null;
             foreach (var clip in clipCache.Values)
             {
-                if (clip != null)
+                if (clip != null && clip != currentClip)
                 {
                     clip.UnloadAudioData();
                 }
@@ -262,13 +284,22 @@ namespace MyUnityPackage.Toolkit
         {
             AudioClip clip = null;
 #if UNITY_EDITOR
+#if I2LOC_PRESENT
+            string editorPath = $"Assets/Voices/{LocalizationManager.CurrentLanguageCode}/{pKey}";
+#else
             string editorPath = $"Assets/Voices/{pKey}";
+#endif
             clip = AssetDatabase.LoadAssetAtPath<AudioClip>(editorPath);
 #endif
             if (clip == null)
             {
-                string resourcesPath = $"Voices/{pKey}";
-                clip = Resources.Load<AudioClip>(resourcesPath) ?? Resources.Load<AudioClip>(pKey);
+#if I2LOC_PRESENT
+                clip = Resources.Load<AudioClip>($"Voices/{LocalizationManager.CurrentLanguageCode}/{pKey}");
+                if (clip == null)
+                    clip = Resources.Load<AudioClip>($"Voices/{pKey}") ?? Resources.Load<AudioClip>(pKey);
+#else
+                clip = Resources.Load<AudioClip>($"Voices/{pKey}") ?? Resources.Load<AudioClip>(pKey);
+#endif
             }
 
             return clip;

@@ -13,6 +13,12 @@
     ],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "I2.Loc",
+            "expression": "",
+            "define": "I2LOC_PRESENT"
+        }
+    ],
     "noEngineReferences": false
 }
