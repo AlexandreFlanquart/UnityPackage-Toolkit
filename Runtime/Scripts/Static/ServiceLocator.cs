@@ -7,7 +7,7 @@ namespace MyUnityPackage.Toolkit
     public static class ServiceLocator
     {
         // Cache services by their concrete type so we only perform the expensive scene lookup once per service.
-        static readonly Dictionary<Type, Component> servicecontainer = new Dictionary<Type, Component>();
+        private static readonly Dictionary<Type, Component> _serviceContainer = new Dictionary<Type, Component>();
 
         /// <summary>
         /// Find a service/script in current scene and return reference of it. Note: this will also locate inactive services.
@@ -15,21 +15,7 @@ namespace MyUnityPackage.Toolkit
         /// <typeparam name="T">Type of service to find</typeparam>
         public static T GetService<T>(bool createObjectIfNotFound = false) where T : Component
         {
-            var serviceType = typeof(T);
-
-            if (servicecontainer.TryGetValue(serviceType, out var cached))
-            {
-                if (cached != null)
-                {
-                    return (T)cached;
-                }
-
-                servicecontainer.Remove(serviceType);
-                MUPLogger.Info($"ServiceLocator removed stale reference of type {serviceType.Name}.");
-            }
-
-            var located = FindService<T>(createObjectIfNotFound);
-            return located;
+            return FindService<T>(createObjectIfNotFound);
         }
 
         /// <summary>
@@ -38,6 +24,7 @@ namespace MyUnityPackage.Toolkit
         /// <typeparam name="T">Type of service to add</typeparam>
         /// <param name="go">GameObject of service to add</param>
         /// <param name="replaceExisting">Allows replacing an existing registered service.</param>
+        /// <exception cref="InvalidOperationException">A service of this type is already registered and <paramref name="replaceExisting"/> is false.</exception>
         public static void AddService<T>(GameObject go, bool replaceExisting = false) where T : Component
         {
             if (go == null)
@@ -54,17 +41,19 @@ namespace MyUnityPackage.Toolkit
                 throw new InvalidOperationException(message);
             }
 
-            if (servicecontainer.TryGetValue(serviceType, out var existing) && existing != null && !replaceExisting)
+            if (_serviceContainer.TryGetValue(serviceType, out var existing) && existing != null)
             {
-                MUPLogger.Warning($"ServiceLocator already contains a reference for type {serviceType.Name}.", existing);
-            }
+                if (!replaceExisting)
+                {
+                    var message = $"ServiceLocator already contains a reference for type {serviceType.Name}. Pass replaceExisting=true to overwrite.";
+                    MUPLogger.Error(message, existing);
+                    throw new InvalidOperationException(message);
+                }
 
-            if (existing != null && replaceExisting)
-            {
                 MUPLogger.Warning($"ServiceLocator replaced existing service of type {serviceType.Name}.", existing);
             }
 
-            servicecontainer[serviceType] = component;
+            _serviceContainer[serviceType] = component;
         }
 
         /// <summary>
@@ -80,9 +69,9 @@ namespace MyUnityPackage.Toolkit
             }
 
             var serviceType = typeof(T);
-            if (servicecontainer.TryGetValue(serviceType, out var existing) && existing == component)
+            if (_serviceContainer.TryGetValue(serviceType, out var existing) && existing == component)
             {
-                servicecontainer.Remove(serviceType);
+                _serviceContainer.Remove(serviceType);
             }
         }
 
@@ -93,7 +82,7 @@ namespace MyUnityPackage.Toolkit
         public static bool Exists<T>() where T : Component
         {
             var serviceType = typeof(T);
-            if (!servicecontainer.TryGetValue(serviceType, out var cached))
+            if (!_serviceContainer.TryGetValue(serviceType, out var cached))
             {
                 return false;
             }
@@ -103,36 +92,38 @@ namespace MyUnityPackage.Toolkit
                 return true;
             }
 
-            servicecontainer.Remove(serviceType);
+            _serviceContainer.Remove(serviceType);
             MUPLogger.Warning($"ServiceLocator removed stale reference while checking existence for type {serviceType.Name}.");
             return false;
         }
 
         /// <summary>
-        /// Look for a game object with type required
+        /// Look for a game object with type required. Checks the cache first (clearing a stale/destroyed
+        /// entry if found), then falls back to a scene-wide search, optionally auto-creating the service.
         /// </summary>
         /// <typeparam name="T">Type to look for</typeparam>
         /// <param name="createObjectIfNotFound">Either create a gameobject with type if not exist</param>
-        static T FindService<T>(bool createObjectIfNotFound = false) where T : Component
+        private static T FindService<T>(bool createObjectIfNotFound = false) where T : Component
         {
             var serviceType = typeof(T);
 
             // Check cache - if entry exists but object is invalid, clean it up
-            if (servicecontainer.TryGetValue(serviceType, out var cached))
+            if (_serviceContainer.TryGetValue(serviceType, out var cached))
             {
                 if (cached != null)
                 {
                     return (T)cached;
                 }
                 // Invalid entry found, remove it before searching hierarchy
-                servicecontainer.Remove(serviceType);
+                _serviceContainer.Remove(serviceType);
+                MUPLogger.Info($"ServiceLocator removed stale reference of type {serviceType.Name}.");
             }
 
             // Always search hierarchy if not in cache or cache was invalid
             var located = GameObject.FindAnyObjectByType<T>(FindObjectsInactive.Include);
             if (located != null)
             {
-                servicecontainer[serviceType] = located;
+                _serviceContainer[serviceType] = located;
                 return located;
             }
 
@@ -152,7 +143,7 @@ namespace MyUnityPackage.Toolkit
             try
             {
                 var component = go.AddComponent<T>();
-                servicecontainer[serviceType] = component;
+                _serviceContainer[serviceType] = component;
                 MUPLogger.Warning($"ServiceLocator auto-created missing service of type {serviceType.Name}.", component);
                 return component;
             }
@@ -164,14 +155,18 @@ namespace MyUnityPackage.Toolkit
             }
         }
 
+        /// <summary>
+        /// Clears every cached service reference. Call this on scene unload to prevent stale
+        /// references from carrying over into a new scene — this is not done automatically.
+        /// </summary>
         public static void Clear()
         {
-            if (servicecontainer.Count == 0)
+            if (_serviceContainer.Count == 0)
             {
                 return;
             }
 
-            servicecontainer.Clear();
+            _serviceContainer.Clear();
             MUPLogger.Warning("ServiceLocator cache cleared.");
         }
     }

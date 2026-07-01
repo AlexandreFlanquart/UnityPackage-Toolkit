@@ -4,91 +4,90 @@ using UnityEngine;
 
 namespace MyUnityPackage.Toolkit
 {
+    /// <summary>
+    /// Registry of <see cref="MUP_ObjectPool{T}"/> instances keyed by their pooled <see cref="Type"/>,
+    /// so any script can retrieve the shared pool for a given component type without holding a direct reference.
+    /// </summary>
     public static class MUP_ObjectPoolLocator
     {
+        private static readonly Dictionary<Type, IMUPObjectPool> poolDictionary = new Dictionary<Type, IMUPObjectPool>();
 
-        private static Dictionary<Type,MUP_ObjectPool> poolDictionnary = new Dictionary<Type,MUP_ObjectPool>();
-
-        public static MUP_ObjectPool Get<T>(/*bool createObjectIfNotFound = false*/) where T: Component
+        /// <summary>Retrieves the pool registered for <typeparamref name="T"/>.</summary>
+        /// <exception cref="InvalidOperationException">No pool of this type was registered via <see cref="Add{T}"/>.</exception>
+        public static MUP_ObjectPool<T> Get<T>() where T : Component
         {
-            var serviceType = typeof(T);
+            var poolType = typeof(T);
 
-            if (poolDictionnary.TryGetValue(serviceType, out var cached))
+            if (poolDictionary.TryGetValue(poolType, out var cached))
             {
-                if (cached != null)
-                {
-                    return /*(T)*/cached;
-                }
-
-                poolDictionnary.Remove(serviceType);
-                MUPLogger.Info($"ServiceLocator removed stale reference of type {serviceType.Name}.");
+                return (MUP_ObjectPool<T>)cached;
             }
 
-          /*  var located = FindService<T>(createObjectIfNotFound);
-            if (located != null)
-            {
-                return located;
-            }
-            */
-            var message = $"ServiceLocator couldn't find service of type {serviceType.Name}).";
+            var message = $"MUP_ObjectPoolLocator: no pool registered for type {poolType.Name}.";
             MUPLogger.Error(message);
             throw new InvalidOperationException(message);
         }
-        public static void Add<T>(/*GameObject go*/MUP_ObjectPool objectPool, bool replaceExisting = false) where T : Component
+
+        /// <summary>Registers <paramref name="objectPool"/> under type <typeparamref name="T"/>.</summary>
+        /// <param name="replaceExisting">If true, replaces an already-registered pool of the same type instead of throwing.</param>
+        public static void Add<T>(MUP_ObjectPool<T> objectPool, bool replaceExisting = false) where T : Component
         {
             if (objectPool == null)
             {
                 throw new ArgumentNullException(nameof(objectPool));
             }
 
-            var serviceType = typeof(T);
-            //var component = objectPool.GetComponent<T>();
-            /*if (component == null)
+            var poolType = typeof(T);
+            if (poolDictionary.TryGetValue(poolType, out var existing) && existing != null)
             {
-                var message = $"ServiceLocator cannot register type {serviceType.Name}: the provided GameObject '{go.name}' has no such component.";
-                MUPLogger.Error(message, go);
-                throw new InvalidOperationException(message);
-            }*/
-            MUP_ObjectPool existing;
-            if (poolDictionnary.TryGetValue(serviceType, out existing) && existing != null && !replaceExisting)
-            {
-                var message = $"ServiceLocator already contains a reference for type {serviceType.Name}. Pass replaceExisting=true to overwrite.";
-               // MUPLogger.Error(message, existing);
-                throw new InvalidOperationException(message);
+                if (!replaceExisting)
+                {
+                    var message = $"MUP_ObjectPoolLocator already contains a pool for type {poolType.Name}. Pass replaceExisting=true to overwrite.";
+                    MUPLogger.Error(message);
+                    throw new InvalidOperationException(message);
+                }
+
+                MUPLogger.Warning($"MUP_ObjectPoolLocator: replaced existing pool of type {poolType.Name}.");
             }
 
-            if (existing != null && replaceExisting)
-            {
-                //MUPLogger.Warning($"ServiceLocator replaced existing service of type {serviceType.Name}.", existing);
-            }
-
-            poolDictionnary[serviceType] = objectPool;
+            poolDictionary[poolType] = objectPool;
+            MUPLogger.Info($"MUP_ObjectPoolLocator: registered pool for type {poolType.Name}.");
         }
 
-        public static void Remove<T>(MUP_ObjectPool objectPool) where T : Component
+        /// <summary>Unregisters <paramref name="objectPool"/> if it's the instance currently registered for <typeparamref name="T"/>.</summary>
+        public static void Remove<T>(MUP_ObjectPool<T> objectPool) where T : Component
         {
             if (objectPool == null)
             {
                 return;
             }
 
-            var serviceType = typeof(T);
-            if (poolDictionnary.TryGetValue(serviceType, out var existing) && existing == objectPool)
+            var poolType = typeof(T);
+            if (poolDictionary.TryGetValue(poolType, out var existing) && ReferenceEquals(existing, objectPool))
             {
-                poolDictionnary.Remove(serviceType);
+                poolDictionary.Remove(poolType);
+                MUPLogger.Info($"MUP_ObjectPoolLocator: unregistered pool for type {poolType.Name}.");
             }
         }
 
+        /// <summary>Whether a pool is currently registered for <typeparamref name="T"/>.</summary>
+        public static bool Exists<T>() where T : Component => poolDictionary.ContainsKey(typeof(T));
+
+        /// <summary>Clears every registered pool (destroying their idle pooled instances) and empties the registry.</summary>
         public static void Clear()
         {
-            if (poolDictionnary.Count == 0)
+            if (poolDictionary.Count == 0)
             {
                 return;
             }
 
-            poolDictionnary.Clear();
-            MUPLogger.Warning("ServiceLocator cache cleared.");
+            foreach (var pool in poolDictionary.Values)
+            {
+                pool.Clear();
+            }
+
+            poolDictionary.Clear();
+            MUPLogger.Warning("MUP_ObjectPoolLocator: cleared.");
         }
     }
 }
-

@@ -4,8 +4,9 @@ using UnityEngine.UI;
 
 namespace MyUnityPackage.Toolkit
 {
-    // This class is used to update the volume of one audio type (Music, SFX, Voice)
-    // To add in a scene, add a GameObject with this script and configure the AudioSettingsSO
+    /// <summary>
+    /// Drives a volume slider and mute button UI for a single <see cref="AudioManager.AudioType"/> channel.
+    /// </summary>
     public class AudioUpdater : MonoBehaviour
     {
         [SerializeField] private AudioManager.AudioType audioType;
@@ -21,6 +22,18 @@ namespace MyUnityPackage.Toolkit
         void Awake()
         {
             Initialize();
+        }
+
+        void OnDestroy()
+        {
+            if (slider != null)
+            {
+                slider.onValueChanged.RemoveListener(OnVolumeChanged);
+            }
+            if (muteButton != null)
+            {
+                muteButton.onClick.RemoveListener(OnMuteClicked);
+            }
         }
 
         private void Initialize()
@@ -47,13 +60,13 @@ namespace MyUnityPackage.Toolkit
             InitVolumeUpdater();
         }
 
-        // Allows external injection of a custom audio service (e.g., for testing or alternative implementations)
+        /// <summary>Injects a custom <see cref="IAudioService"/> (e.g. for testing), replacing the default <see cref="AudioManagerService"/>.</summary>
         public void InjectAudioService(IAudioService service)
         {
             audioService = service;
         }
 
-        // Initializes the volume UI and audio settings based on the provided AudioSettingsSO
+        /// <summary>Refreshes the slider/text/mute-image UI from the current <see cref="audioService"/> state.</summary>
         public void InitVolumeUpdater()
         {
             float volume = audioService.GetVolume(audioType);

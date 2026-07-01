@@ -1,58 +1,71 @@
 # ObjectPool
 
-Object manager aimed at reusing created objects to save time.
+Object manager aimed at reusing created objects to save time. Generic over any `Component` type — use a
+custom script (e.g. `Bullet`) as the type parameter, or `Transform` to pool a plain prefab with no
+distinguishing script (every GameObject has one).
 
 ## Usage
 
 ### Create a pool
 Instantiate and initialize a new object pool:
 ```c#
-MUP_ObjectPool objectPooling = new MUP_ObjectPool();
-objectPooling.Initialize(10, 20, 20, parent.transform, prefab);
+MUP_ObjectPool<Bullet> objectPooling = new MUP_ObjectPool<Bullet>();
+objectPooling.Initialize(10, 20, 20, parent.transform, prefab.GetComponent<Bullet>());
 ```
+`baseSizeQueue` is only an initial capacity hint — instances are still created lazily on the first `Get()`
+calls, nothing is spawned by `Initialize()` itself. `maxSizeActive` caps how many instances can be checked
+out at once (0 or less means no limit).
 
 ### Get an object
 ```c#
-GameObject go = objectPooling.Get();
+Bullet bullet = objectPooling.Get(); // null if maxSizeActive is already reached
 ```
 
 ### Release an object
 ```c#
-objectPooling.Release(gameObject);
+objectPooling.Release(bullet);
+```
+
+### React to pool events
+```c#
+objectPooling.OnGetPoolAction += b => b.ResetState();
+objectPooling.OnReturnPoolAction += b => b.PlayDespawnVfx();
+```
+
+### Pool a prefab with no custom script
+```c#
+MUP_ObjectPool<Transform> cubes = new MUP_ObjectPool<Transform>();
+cubes.Initialize(10, 10, 20, parent.transform, cubePrefab.transform);
 ```
 
 ## Best practices
 - Always `Release()` objects back to the pool instead of `Destroy()` to keep allocations stable.
-- Ensure pooled objects reset their state (position, rotation, enabled components, particles, etc.) when reused.
+- Ensure pooled objects reset their own state (position, rotation, enabled components, particles, etc.) when reused — do this in `OnGetPoolAction`, not by relying on `Awake`/`OnEnable` (pooled instances only run those once).
 - Prefer pooling for frequently spawned/despawned objects (bullets, VFX, decals, UI popups).
+- Keep `collectionCheck` enabled (default) during development — it catches double-`Release()` bugs instead of silently corrupting the pool.
 
 # ObjectPoolLocator
 
-Manager that stores all created `MUP_ObjectPool` instances and lets you access them anywhere in code, based on the ServiceLocator principle.
+Static registry that stores `MUP_ObjectPool<T>` instances keyed by their pooled component type `T`, so any
+script can reach a pool without holding a direct reference — based on the `ServiceLocator` principle.
 
-
-Retrieve an object:
-Gets a **MUP_PoolObject** of type "Bullet" stored in the pool locator.
-```c#
-MUP_ObjectPool poolBullet = MUP_ObjectPoolLocator.Get<Bullet>();
-```
-
-
-Add an object:
-Adds a **MUP_PoolObject** of type "Bullet" into the pool locator.
+Add a pool:
 ```c#
 MUP_ObjectPoolLocator.Add<Bullet>(pool);
 ```
 
-Remove an object:
-Removes a **MUP_PoolObject** of type "Bullet" from the pool locator.
+Retrieve it elsewhere:
 ```c#
+MUP_ObjectPool<Bullet> pool = MUP_ObjectPoolLocator.Get<Bullet>();
+```
+
+Check / remove:
+```c#
+bool hasPool = MUP_ObjectPoolLocator.Exists<Bullet>();
 MUP_ObjectPoolLocator.Remove<Bullet>(pool);
 ```
 
-
-Clear the PoolLocator:
-Empties the pool locator.
+Clear every registered pool (destroys their idle instances too):
 ```c#
 MUP_ObjectPoolLocator.Clear();
 ```

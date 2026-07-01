@@ -7,6 +7,9 @@ using UnityEngine.UI;
 
 namespace MyUnityPackage.Toolkit
 {
+    /// <summary>
+    /// Syncs a set of UI toggles with I2 Localization's current language (no-op if I2 isn't installed).
+    /// </summary>
     public class LanguageSwitcher : MonoBehaviour
     {
 #if I2LOC_PRESENT
@@ -63,6 +66,7 @@ namespace MyUnityPackage.Toolkit
             return toggles[index].name;
         }
 
+        /// <summary>Sets the active I2 Localization language and logs the change.</summary>
         public void SetLanguage(string languageName)
         {
             LocalizationManager.CurrentLanguage = languageName;

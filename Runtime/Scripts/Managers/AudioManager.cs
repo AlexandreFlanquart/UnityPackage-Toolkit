@@ -97,6 +97,8 @@ namespace MyUnityPackage.Toolkit
             var musicSO = Resources.Load<AudioSettingsSO>("AudioSettings/MusicSettingsSO");
             var sfxSO = Resources.Load<AudioSettingsSO>("AudioSettings/SFXSettingsSO");
             var voiceSO = Resources.Load<AudioSettingsSO>("AudioSettings/VoiceSettingsSO");
+            var ambienceSO = Resources.Load<AudioSettingsSO>("AudioSettings/AmbienceSettingsSO");
+            var uiSO = Resources.Load<AudioSettingsSO>("AudioSettings/UISettingsSO");
 
             if (musicSO != null)
             {
@@ -113,6 +115,16 @@ namespace MyUnityPackage.Toolkit
             {
                 voiceSetting.settingsSO = voiceSO;
                 SetVolume(AudioType.Voice, voiceSO.defaultVolume);
+            }
+            if (ambienceSO != null)
+            {
+                ambienceSetting.settingsSO = ambienceSO;
+                SetVolume(AudioType.Ambience, ambienceSO.defaultVolume);
+            }
+            if (uiSO != null)
+            {
+                uiSetting.settingsSO = uiSO;
+                SetVolume(AudioType.UI, uiSO.defaultVolume);
             }
         }
 

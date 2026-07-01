@@ -31,6 +31,7 @@ void Awake()
     ServiceLocator.AddService<MyClass>(gameObject, replaceExisting: true);
 }
 ```
+By default (`replaceExisting: false`), registering a type that's already live throws an `InvalidOperationException` instead of silently overwriting it — pass `replaceExisting: true` when a component may legitimately re-register itself (the standard self-registering singleton pattern below).
 
 ### Check existence
 ```C#
