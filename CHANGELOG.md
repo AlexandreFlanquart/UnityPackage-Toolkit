@@ -1,3 +1,7 @@
+## [1.0.7] - 2026-08-25
+### Added
+- Add `SafeAreaFitter`: fits a RectTransform to `Screen.safeArea` (notch/punch-hole, rounded corners, status/gesture bars), recomputing only when resolution or orientation actually changes
+
 ## [1.0.6] - 2026-07-01
 ### Added
 - Add `MusicManager`: crossfaded background music (two A/B sources)
