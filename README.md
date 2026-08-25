@@ -10,7 +10,7 @@ This toolkit is designed for developers who want a solid, modular foundation for
 Detailed documentation for each system is available in the `Docs/` folder:
 
 - [Docs/AudioSystem.md](Docs/AudioSystem.md): `AudioManager` (volume/mute), per-channel playback managers (`MusicManager`, `SFXManager`, `UIAudioManager`, `AmbienceManager`, `VoiceManager`), `AudioCueSO` sound definitions, and AudioMixer integration.
-- [Docs/UISystem.md](Docs/UISystem.md): UI canvas management helpers and base classes.
+- [Docs/UISystem.md](Docs/UISystem.md): UI canvas management helpers, base classes, and safe-area handling.
 - [Docs/ServiceLocator.md](Docs/ServiceLocator.md): ServiceLocator pattern, creation, and lifecycle of services.
 - [Docs/ObjectPool.md](Docs/ObjectPool.md): object pooling and a pool locator helper.
 - [Docs/MUPLogger.md](Docs/MUPLogger.md): logger setup, log level management, and Unity integrations.
