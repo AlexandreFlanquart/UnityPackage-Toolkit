@@ -103,6 +103,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -356,7 +357,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067addc7333879041b51cbffc97df14b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  clickSound: {fileID: 8300000, guid: 313beed1f321d1942b5c66dbaf0897e2, type: 3}
+  clickSound: {fileID: 0}
 --- !u!1 &441816664550734123
 GameObject:
   m_ObjectHideFlags: 0
@@ -550,6 +551,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1277,6 +1279,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1444,7 +1447,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 067addc7333879041b51cbffc97df14b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  clickSound: {fileID: 8300000, guid: 313beed1f321d1942b5c66dbaf0897e2, type: 3}
+  clickSound: {fileID: 0}
 --- !u!1 &3455464091415499400
 GameObject:
   m_ObjectHideFlags: 0
@@ -1698,6 +1701,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1906,12 +1910,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 274b35c571de89147a804891b565ccf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioType: 0
+  bus: 0
   volumeText: {fileID: 8166264964506944341}
   muteButton: {fileID: 3253607043863081526}
   slider: {fileID: 8241888291172164356}
   muteText: {fileID: 0}
-  isMuted: 0
 --- !u!1 &4190405078371157804
 GameObject:
   m_ObjectHideFlags: 0
@@ -2051,6 +2054,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2216,7 +2220,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee986793a832d174cb1ea1cc7717c267, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvasHelper: {fileID: 267918611256080205}
   buttonPlay: {fileID: 2343517033874918351}
 --- !u!114 &267918611256080205
 MonoBehaviour:
@@ -2718,6 +2721,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2890,6 +2894,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3179,12 +3184,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 274b35c571de89147a804891b565ccf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioType: 2
+  bus: 2
   volumeText: {fileID: 2280112530560126850}
   muteButton: {fileID: 300472307779767549}
   slider: {fileID: 8149185287344335487}
   muteText: {fileID: 0}
-  isMuted: 0
 --- !u!1 &7480664484712516655
 GameObject:
   m_ObjectHideFlags: 0
@@ -3246,12 +3250,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 274b35c571de89147a804891b565ccf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioType: 1
+  bus: 1
   volumeText: {fileID: 2628060029496492600}
   muteButton: {fileID: 3269808574121971639}
   slider: {fileID: 7070928179495279736}
   muteText: {fileID: 0}
-  isMuted: 0
 --- !u!1 &7563992617686236357
 GameObject:
   m_ObjectHideFlags: 0
@@ -3355,6 +3358,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0

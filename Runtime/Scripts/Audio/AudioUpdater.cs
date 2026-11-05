@@ -1,30 +1,59 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace MyUnityPackage.Toolkit
 {
     /// <summary>
-    /// Drives a volume slider and mute button UI for a single <see cref="AudioManager.AudioType"/> channel.
+    /// Drives a volume slider and mute button UI for a single <see cref="AudioBus"/>.
     /// </summary>
     public class AudioUpdater : MonoBehaviour
     {
-        [SerializeField] private AudioManager.AudioType audioType;
+        [Tooltip("Bus controlled by this slider: Music (music and ambience), Voice, or SFX (UI, world and game sounds).")]
+        [FormerlySerializedAs("audioType")]
+        [SerializeField] private AudioBus bus;
+        [Tooltip("Optional. Shows the volume as a percentage.")]
         [SerializeField] private TextMeshProUGUI volumeText;
+        [Tooltip("Optional. Toggles mute; its image switches between the muted/unmuted sprites of the AudioConfig.")]
         [SerializeField] private Button muteButton;
+        [Tooltip("Volume slider, driven in [0, 1].")]
         [SerializeField] private Slider slider;
+        [Tooltip("Optional. Shows \"Mute\" or \"Unmute\".")]
         [SerializeField] private TextMeshProUGUI muteText;
-        [SerializeField] private bool isMuted;
 
-        // Reference to the audio service interface. Can be injected for testing or replaced with another implementation.
-        private IAudioService audioService;
-
-        void Awake()
+        private void Awake()
         {
-            Initialize();
+            if (slider != null)
+            {
+                slider.minValue = 0f;
+                slider.maxValue = 1f;
+                slider.onValueChanged.AddListener(OnVolumeChanged);
+            }
+            else
+            {
+                MUPLogger.Error($"AudioUpdater on '{name}' is missing a Slider reference.");
+            }
+
+            if (muteButton != null)
+            {
+                muteButton.onClick.AddListener(OnMuteClicked);
+            }
         }
 
-        void OnDestroy()
+        // Volumes can change while this UI is hidden (save restored, another slider on the same bus).
+        private void OnEnable()
+        {
+            AudioManager.VolumeChanged += OnBusVolumeChanged;
+            Refresh();
+        }
+
+        private void OnDisable()
+        {
+            AudioManager.VolumeChanged -= OnBusVolumeChanged;
+        }
+
+        private void OnDestroy()
         {
             if (slider != null)
             {
@@ -36,115 +65,53 @@ namespace MyUnityPackage.Toolkit
             }
         }
 
-        private void Initialize()
+        /// <summary>Refreshes the slider, texts and mute image from the current <see cref="AudioManager"/> state.</summary>
+        public void Refresh()
         {
-            // If no audio service has been injected, use the default implementation
-            if (audioService == null)
-                audioService = new AudioManagerService(); // default fallback
-
+            float volume = AudioManager.GetVolume(bus);
             if (slider != null)
             {
-                slider.onValueChanged.AddListener(OnVolumeChanged);
-                slider.minValue = 0f;
-                slider.maxValue = 1f;
+                slider.SetValueWithoutNotify(volume);
             }
-            else
-            {
-                MUPLogger.Error($"AudioUpdater on '{name}' is missing a Slider reference.");
-            }
-
-            if (muteButton != null)
-            {
-                muteButton.onClick.AddListener(OnMuteClicked);
-            }
-            InitVolumeUpdater();
+            UpdateLabels(volume);
         }
 
-        /// <summary>Injects a custom <see cref="IAudioService"/> (e.g. for testing), replacing the default <see cref="AudioManagerService"/>.</summary>
-        public void InjectAudioService(IAudioService service)
-        {
-            audioService = service;
-        }
-
-        /// <summary>Refreshes the slider/text/mute-image UI from the current <see cref="audioService"/> state.</summary>
-        public void InitVolumeUpdater()
-        {
-            float volume = audioService.GetVolume(audioType);
-
-            if (slider != null)
-            {
-                slider.value = volume;
-            }
-
-            UpdateVolumeText(volume);
-            UpdateMuteText(volume);
-
-            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
-            isMuted = settings != null && settings.isMuted;
-
-            UpdateMuteImage(settings);
-        }
-
-        // Called when the volume slider value changes
+        // The UI refreshes through OnBusVolumeChanged, raised by SetVolume and ToggleMute.
         private void OnVolumeChanged(float value)
         {
-            audioService.SetVolume(audioType, value);
-            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
-            UpdateMuteImage(settings);
-            UpdateVolumeText(value);
+            AudioManager.SetVolume(bus, value);
         }
 
-        // Called when the mute button is clicked
         private void OnMuteClicked()
         {
-            MUPLogger.Info("OnMuteClicked");
-            audioService.ToggleMute(audioType);
-            var settings = audioService.GetAudioSettingsFromAudioType(audioType);
-            isMuted = settings != null && settings.isMuted;
-            MUPLogger.Info(audioType.ToString() + " isMuted: " + isMuted.ToString());
-
-            float currentVolume = audioService.GetVolume(audioType);
-            if (slider != null)
-            {
-                slider.value = currentVolume;
-                UpdateVolumeText(currentVolume);
-            }
-            UpdateMuteText(currentVolume);
-            UpdateMuteImage(settings);
-
+            AudioManager.ToggleMute(bus);
+            MUPLogger.Info($"{bus} isMuted: {AudioManager.IsMuted(bus)}");
         }
 
-        // Updates the volume text UI to reflect the current value
-        private void UpdateVolumeText(float value)
+        private void OnBusVolumeChanged(AudioBus changedBus, float volume)
+        {
+            if (changedBus == bus) Refresh();
+        }
+
+        private void UpdateLabels(float volume)
         {
             if (volumeText != null)
             {
-                volumeText.text = $"{Mathf.RoundToInt(value * 100)}%";
+                volumeText.text = $"{Mathf.RoundToInt(volume * 100)}%";
             }
-        }
-
-        // Updates the mute/unmute text based on the current volume
-        private void UpdateMuteText(float value)
-        {
             if (muteText != null)
             {
-                muteText.text = value <= AudioManager.MuteThreshold ? "Unmute" : "Mute";
+                muteText.text = volume <= AudioManager.MuteThreshold ? "Unmute" : "Mute";
             }
+            UpdateMuteImage();
         }
 
-        // Updates the mute button image to reflect the current mute state
-        private void UpdateMuteImage(AudioManager.AudioSetting settings)
+        private void UpdateMuteImage()
         {
-            if (muteButton == null || muteButton.image == null)
-            {
-                return;
-            }
+            if (muteButton == null || muteButton.image == null) return;
 
-            var sprite = settings?.settingsSO == null
-                ? null
-                : (settings.isMuted ? settings.settingsSO.mutedImage : settings.settingsSO.unmutedImage);
-
-            muteButton.image.enabled = sprite != null;
+            // Without sprites in the AudioConfig the button keeps its own image (a disabled image would block clicks).
+            var sprite = AudioManager.GetMuteSprite(bus);
             if (sprite != null)
             {
                 muteButton.image.sprite = sprite;
@@ -152,4 +119,3 @@ namespace MyUnityPackage.Toolkit
         }
     }
 }
-

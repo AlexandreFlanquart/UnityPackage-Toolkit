@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace MyUnityPackage.Toolkit
 {
@@ -14,174 +13,238 @@ namespace MyUnityPackage.Toolkit
     }
 
     /// <summary>
-    /// Pool-based SFX manager. Supports 2D and fire-and-forget 3D sounds.
-    /// Respects per-<see cref="AudioCueSO"/> cooldowns, instance limits, and priority.
+    /// Pool-based player for every one-shot sound: UI clicks, 2D effects and 3D sounds at a world position.
+    /// Several sounds overlap freely; each one gets its own source, so pitch randomisation never leaks to another sound.
+    /// Respects per-<see cref="SoundSO"/> cooldowns, instance limits and priority.
     /// </summary>
     [DisallowMultipleComponent]
     public class SFXManager : MonoBehaviour
     {
+        [Tooltip("Number of sounds that can play at the same time.")]
         [SerializeField, Min(1)] private int poolSize = 16;
+        [Tooltip("Behaviour when every source is busy: drop the new sound, or interrupt the oldest one if the new sound's priority is equal or higher.")]
         [SerializeField] private SFXStealStrategy stealStrategy = SFXStealStrategy.StealOldest;
 
-        private AudioSource[] _pool;
+        [Header("3D sounds (Play with a position)")]
+        [Tooltip("Distance in world units under which a 3D sound plays at full volume.")]
+        [SerializeField, Min(0f)] private float spatialMinDistance = 1f;
+        [Tooltip("Distance in world units beyond which a 3D sound is silent (linear rolloff).")]
+        [SerializeField, Min(0f)] private float spatialMaxDistance = 15f;
 
-        // Maps each source to the cue currently using it + its release coroutine.
-        // Used to properly clean up when a source is stolen.
-        private readonly Dictionary<AudioSource, (AudioCueSO cue, Coroutine coroutine, float startTime)> _sourceMap = new();
+        private class PooledSource
+        {
+            public AudioSource source;
+            public SoundSO sound;
+            public int generation;
+            public float startTime;
+        }
+
+        private PooledSource[] _pool;
 
         private void Awake()
         {
-            _pool = new AudioSource[poolSize];
+            EnsurePool();
+            ServiceLocator.AddService<SFXManager>(gameObject, true);
+            MUPLogger.Info("SFXManager initialized.");
+        }
+
+        // Also called from Play: a script's Awake can reach this manager before its own Awake
+        // (ServiceLocator falls back to a scene search).
+        private void EnsurePool()
+        {
+            if (_pool != null) return;
+
+            _pool = new PooledSource[poolSize];
             for (int i = 0; i < poolSize; i++)
             {
                 var go = new GameObject($"SFXSource_{i}");
                 go.transform.SetParent(transform);
                 var src = go.AddComponent<AudioSource>();
                 src.playOnAwake = false;
-                src.spatialBlend = 0f;
-                _pool[i] = src;
+                src.dopplerLevel = 0f;
+                src.rolloffMode = AudioRolloffMode.Linear;
+                _pool[i] = new PooledSource { source = src };
             }
-            ServiceLocator.AddService<SFXManager>(gameObject, true);
-            MUPLogger.Info("SFXManager initialized.");
+        }
+
+        // The mixer ignores SetFloat until the scene has started: push the bus volumes now.
+        private void Start()
+        {
+            AudioManager.ApplyAll();
         }
 
         private void OnDestroy()
         {
             ServiceLocator.RemoveService<SFXManager>(this);
 
-            // Release any cues still tracked as playing, otherwise their maxInstances/cooldown
-            // counters stay incremented forever (ScriptableObject state outlives this scene).
-            foreach (var entry in _sourceMap.Values)
+            if (_pool == null) return;
+
+            // Release sounds still tracked as playing, otherwise their maxInstances counters stay
+            // incremented forever (ScriptableObject state outlives this scene).
+            for (int i = 0; i < _pool.Length; i++)
             {
-                entry.cue?.OnStop();
+                ReleaseSound(i);
             }
-            _sourceMap.Clear();
+        }
+
+        // Releases the instance slot of sounds that ended on their own.
+        private void Update()
+        {
+            for (int i = 0; i < _pool.Length; i++)
+            {
+                if (_pool[i].sound != null && !AudioManager.IsBusy(_pool[i].source) && !AudioListener.pause)
+                {
+                    ReleaseSound(i);
+                }
+            }
+        }
+
+        #region Play
+        /// <summary>Plays a sound in 2D. Output: the sound's group, or the SFX group of the AudioConfig.</summary>
+        public SoundHandle Play(SoundSO sound) => PlaySound(sound, null, DefaultGroup(false));
+
+        /// <summary>Plays a sound in 3D at a world position. Output: the sound's group, or the World group of the AudioConfig.</summary>
+        public SoundHandle Play(SoundSO sound, Vector3 position) => PlaySound(sound, position, DefaultGroup(true));
+
+        /// <summary>Plays a UI sound in 2D. Output: the sound's group, or the UI group of the AudioConfig.</summary>
+        public SoundHandle PlayUI(SoundSO sound)
+        {
+            var config = AudioManager.Config;
+            return PlaySound(sound, null, config != null ? config.UIGroup : null);
         }
 
         /// <summary>
-        /// Plays an <see cref="AudioCueSO"/>. Applies randomised volume/pitch, respects cooldown and instance limit.
+        /// Plays a raw clip in 2D, without SoundSO rules (no randomisation, cooldown or instance limit).
+        /// Output: <paramref name="output"/>, or the SFX group of the AudioConfig.
         /// </summary>
-        /// <param name="cue">The sound definition to play.</param>
-        /// <param name="position">World position for 3D sound. Null for 2D.</param>
-        /// <returns>The <see cref="AudioSource"/> used, or <c>null</c> if the request was rejected.</returns>
-        public AudioSource Play(AudioCueSO cue, Vector3? position = null)
+        public SoundHandle Play(AudioClip clip, float volume = 1f, AudioMixerGroup output = null)
         {
-            if (cue == null || !cue.CanPlay()) return null;
+            if (clip == null) return default;
 
-            var clip = cue.GetClip();
-            if (clip == null) return null;
+            int index = GetFreeIndex(128);
+            if (index < 0) return default;
 
-            var source = GetFreeSource(cue.Priority);
-            if (source == null) return null;
-
-            AssignAndPlay(source, cue, clip, position);
-            return source;
+            return StartSource(index, clip, output != null ? output : DefaultGroup(false), volume, 1f, 128, null, null);
         }
 
-        /// <summary>
-        /// Plays a raw clip bypassing <see cref="AudioCueSO"/> rules. Useful for legacy callers.
-        /// </summary>
-        public AudioSource PlayRaw(AudioClip clip, AudioManager.AudioType audioType,
-                                   float volume = 1f, float pitch = 1f, Vector3? position = null)
+        private SoundHandle PlaySound(SoundSO sound, Vector3? position, AudioMixerGroup fallbackOutput)
         {
-            if (clip == null) return null;
+            if (sound == null || !sound.CanPlay()) return default;
 
-            var source = GetFreeSource(128);
-            if (source == null) return null;
+            var clip = sound.GetClip();
+            if (clip == null) return default;
 
-            source.outputAudioMixerGroup = AudioManager.GetAudioMixerGroup(audioType);
-            source.volume  = volume;
-            source.pitch   = pitch;
-            source.priority = 128;
-            Configure3D(source, position);
-            source.clip = clip;
-            source.Play();
+            int index = GetFreeIndex(sound.Priority);
+            if (index < 0) return default;
 
-            // No cue tracking for raw playback
-            _sourceMap[source] = (null, null, Time.realtimeSinceStartup);
-            return source;
+            var output = sound.Output != null ? sound.Output : fallbackOutput;
+            var handle = StartSource(index, clip, output, sound.GetVolume(), sound.GetPitch(), sound.Priority, position, sound);
+            sound.OnPlay();
+            return handle;
         }
 
-        private void AssignAndPlay(AudioSource source, AudioCueSO cue, AudioClip clip, Vector3? position)
+        private SoundHandle StartSource(int index, AudioClip clip, AudioMixerGroup output, float volume, float pitch,
+                                        int priority, Vector3? position, SoundSO sound)
         {
-            // If this source was already in use, cleanly stop the previous cue
-            ReleasePreviousCue(source);
+            ReleaseSound(index);
 
-            source.outputAudioMixerGroup = AudioManager.GetAudioMixerGroup(cue.AudioType);
-            source.volume  = cue.GetVolume();
-            source.pitch   = cue.GetPitch();
-            source.priority = cue.Priority;
-            Configure3D(source, position);
-            source.clip = clip;
-            source.Play();
-
-            cue.OnPlay();
-            var coroutine = StartCoroutine(ReleaseWhenDone(cue, source));
-            _sourceMap[source] = (cue, coroutine, Time.realtimeSinceStartup);
-        }
-
-        /// <summary>
-        /// Stops the coroutine tracking a stolen source and notifies the old cue that its instance ended.
-        /// </summary>
-        private void ReleasePreviousCue(AudioSource source)
-        {
-            if (!_sourceMap.TryGetValue(source, out var entry)) return;
-            if (entry.coroutine != null) StopCoroutine(entry.coroutine);
-            entry.cue?.OnStop();
-            _sourceMap.Remove(source);
-        }
-
-        private void Configure3D(AudioSource source, Vector3? position)
-        {
+            var pooled = _pool[index];
+            var source = pooled.source;
+            source.outputAudioMixerGroup = output;
+            source.volume = volume;
+            source.pitch = pitch;
+            source.priority = priority;
+            source.spatialBlend = position.HasValue ? 1f : 0f;
             if (position.HasValue)
             {
                 source.transform.position = position.Value;
-                source.spatialBlend = 1f;
+                source.minDistance = spatialMinDistance;
+                source.maxDistance = spatialMaxDistance;
             }
-            else
-            {
-                source.spatialBlend = 0f;
-            }
+            source.clip = clip;
+            source.Play();
+
+            pooled.sound = sound;
+            pooled.generation++;
+            pooled.startTime = Time.realtimeSinceStartup;
+            return new SoundHandle(this, index, pooled.generation);
         }
 
-        private AudioSource GetFreeSource(int requestPriority)
+        private AudioMixerGroup DefaultGroup(bool spatial)
         {
-            AudioSource oldest = null;
+            var config = AudioManager.Config;
+            if (config == null) return null;
+            return spatial ? config.WorldGroup : config.SFXGroup;
+        }
+        #endregion
+
+        #region Handles
+        internal bool IsPlaying(SoundHandle handle)
+        {
+            var pooled = GetPooled(handle);
+            return pooled != null && AudioManager.IsBusy(pooled.source);
+        }
+
+        internal void Stop(SoundHandle handle)
+        {
+            var pooled = GetPooled(handle);
+            if (pooled == null) return;
+
+            pooled.source.Stop();
+            ReleaseSound(handle.SourceIndex);
+        }
+
+        // Null when the handle is empty or its source has since been reused by another sound.
+        private PooledSource GetPooled(SoundHandle handle)
+        {
+            if (_pool == null || handle.SourceIndex < 0 || handle.SourceIndex >= _pool.Length) return null;
+            var pooled = _pool[handle.SourceIndex];
+            return pooled.generation == handle.Generation && handle.Generation > 0 ? pooled : null;
+        }
+        #endregion
+
+        private void ReleaseSound(int index)
+        {
+            var pooled = _pool[index];
+            if (pooled.sound == null) return;
+            pooled.sound.OnStop();
+            pooled.sound = null;
+        }
+
+        private int GetFreeIndex(int requestPriority)
+        {
+            EnsurePool();
+            int oldest = -1;
             float oldestTime = float.MaxValue;
 
-            foreach (var src in _pool)
+            for (int i = 0; i < _pool.Length; i++)
             {
-                if (!src.isPlaying) return src;
+                // While AudioListener.pause is on, every source reports not playing: only reuse released ones.
+                bool busy = AudioManager.IsBusy(_pool[i].source) || (AudioListener.pause && _pool[i].sound != null);
+                if (!busy) return i;
 
-                if (_sourceMap.TryGetValue(src, out var entry) && entry.startTime < oldestTime)
+                if (_pool[i].startTime < oldestTime)
                 {
-                    oldestTime = entry.startTime;
-                    oldest = src;
+                    oldestTime = _pool[i].startTime;
+                    oldest = i;
                 }
             }
 
             if (stealStrategy == SFXStealStrategy.DropNew)
             {
                 MUPLogger.Warning("SFXManager: pool full, dropping new sound (DropNew).");
-                return null;
+                return -1;
             }
 
             // Only steal if the incoming request has equal or higher priority (lower number = higher priority)
-            if (oldest != null && requestPriority <= oldest.priority)
+            if (oldest >= 0 && requestPriority <= _pool[oldest].source.priority)
             {
                 MUPLogger.Warning("SFXManager: pool full, stealing oldest source (StealOldest).");
                 return oldest;
             }
 
             MUPLogger.Warning("SFXManager: pool full and request priority too low, dropping.");
-            return null;
-        }
-
-        private IEnumerator ReleaseWhenDone(AudioCueSO cue, AudioSource source)
-        {
-            yield return new WaitUntil(() => source == null || !source.isPlaying);
-            cue.OnStop();
-            _sourceMap.Remove(source);
+            return -1;
         }
     }
 }

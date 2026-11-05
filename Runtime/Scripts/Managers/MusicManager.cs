@@ -1,29 +1,39 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MyUnityPackage.Toolkit
 {
     /// <summary>
-    /// Manages background music with smooth crossfading between tracks.
-    /// Uses two AudioSources (A/B) so the outgoing track fades out while the incoming one fades in.
+    /// Plays any number of 2D music loops at the same time (music, ambience beds), each with its own volume.
+    /// A track is identified by its <see cref="AudioClip"/>. All tracks go through the Music group of the AudioConfig.
     /// </summary>
     [DisallowMultipleComponent]
     public class MusicManager : MonoBehaviour
     {
-        [SerializeField] private float defaultCrossfadeDuration = 1f;
+        [Tooltip("Fade duration in seconds used when a call passes no explicit duration.")]
+        [FormerlySerializedAs("defaultCrossfadeDuration")]
+        [SerializeField, Min(0f)] private float defaultFadeDuration = 1f;
 
-        private AudioSource _sourceA;
-        private AudioSource _sourceB;
-        private AudioSource _activeSource;
-        private Coroutine _crossfadeCoroutine;
+        private class Track
+        {
+            public AudioSource source;
+            public Coroutine fade;
+        }
+
+        private readonly List<Track> _tracks = new();
 
         private void Awake()
         {
-            _sourceA = CreateSource("MusicSource_A");
-            _sourceB = CreateSource("MusicSource_B");
-            _activeSource = _sourceA;
             ServiceLocator.AddService<MusicManager>(gameObject, true);
             MUPLogger.Info("MusicManager initialized.");
+        }
+
+        // The mixer ignores SetFloat until the scene has started: push the bus volumes now.
+        private void Start()
+        {
+            AudioManager.ApplyAll();
         }
 
         private void OnDestroy()
@@ -31,21 +41,13 @@ namespace MyUnityPackage.Toolkit
             ServiceLocator.RemoveService<MusicManager>(this);
         }
 
-        private AudioSource CreateSource(string sourceName)
-        {
-            var go = new GameObject(sourceName);
-            go.transform.SetParent(transform);
-            var src = go.AddComponent<AudioSource>();
-            src.playOnAwake = false;
-            src.loop = true;
-            src.volume = 0f;
-            src.spatialBlend = 0f;
-            src.outputAudioMixerGroup = AudioManager.GetAudioMixerGroup(AudioManager.AudioType.Music);
-            return src;
-        }
-
-        /// <summary>Crossfades to a new clip. Ignores the call if the clip is already the active one.</summary>
-        public void Play(AudioClip clip, float crossfadeDuration = -1f)
+        /// <summary>
+        /// Starts a looping track and fades it to <paramref name="volume"/>.
+        /// If the clip is already playing, only its volume changes (the track does not restart).
+        /// </summary>
+        /// <param name="volume">Track volume [0, 1], multiplied by the Music bus volume.</param>
+        /// <param name="fadeDuration">Seconds. Negative = default fade duration.</param>
+        public void Play(AudioClip clip, float volume = 1f, float fadeDuration = -1f)
         {
             if (clip == null)
             {
@@ -53,89 +55,136 @@ namespace MyUnityPackage.Toolkit
                 return;
             }
 
-            if (_activeSource.clip == clip && _activeSource.isPlaying)
+            var track = FindTrack(clip);
+            if (track == null)
             {
-                MUPLogger.Info($"MusicManager: '{clip.name}' is already playing.");
+                track = GetFreeTrack();
+                track.source.clip = clip;
+                track.source.volume = 0f;
+                track.source.Play();
+                MUPLogger.Info($"MusicManager: playing '{clip.name}'.");
+            }
+            else if (!AudioManager.IsBusy(track.source) && !AudioListener.pause)
+            {
+                // Source stopped without being released (e.g. this object was disabled during a fade).
+                track.source.Play();
+            }
+
+            FadeTo(track, volume, fadeDuration, false);
+        }
+
+        /// <summary>Fades a playing track to <paramref name="volume"/> [0, 1] without stopping it.</summary>
+        public void SetVolume(AudioClip clip, float volume, float fadeDuration = -1f)
+        {
+            var track = FindTrack(clip);
+            if (track == null)
+            {
+                MUPLogger.Warning($"MusicManager.SetVolume: '{(clip != null ? clip.name : "null")}' is not playing.");
                 return;
             }
 
-            if (crossfadeDuration < 0f) crossfadeDuration = defaultCrossfadeDuration;
-
-            if (_crossfadeCoroutine != null)
-                StopCoroutine(_crossfadeCoroutine);
-
-            _crossfadeCoroutine = StartCoroutine(CrossfadeRoutine(clip, crossfadeDuration));
-            MUPLogger.Info($"MusicManager: crossfading to '{clip.name}' over {crossfadeDuration}s.");
+            FadeTo(track, volume, fadeDuration, false);
         }
 
-        /// <summary>Crossfades to the clip from an <see cref="AudioCueSO"/>.</summary>
-        public void Play(AudioCueSO cue, float crossfadeDuration = -1f)
+        /// <summary>Fades a track out, then stops it.</summary>
+        public void Stop(AudioClip clip, float fadeDuration = -1f)
         {
-            if (cue == null) return;
-            Play(cue.GetClip(), crossfadeDuration);
+            var track = FindTrack(clip);
+            if (track == null) return;
+
+            FadeTo(track, 0f, fadeDuration, true);
+            MUPLogger.Info($"MusicManager: stopping '{clip.name}'.");
         }
 
-        /// <summary>Fades out the current track and stops playback.</summary>
-        public void Stop(float fadeDuration = 1f)
+        /// <summary>Fades every track out, then stops them.</summary>
+        public void StopAll(float fadeDuration = -1f)
         {
-            if (_crossfadeCoroutine != null)
-                StopCoroutine(_crossfadeCoroutine);
-
-            // Fade out both sources: a crossfade may be in progress, leaving the incoming
-            // source at a partial volume that would otherwise never be stopped.
-            _crossfadeCoroutine = StartCoroutine(FadeOutBothRoutine(fadeDuration));
-            MUPLogger.Info($"MusicManager: stopping over {fadeDuration}s.");
+            foreach (var track in _tracks)
+            {
+                if (track.source.clip != null)
+                {
+                    FadeTo(track, 0f, fadeDuration, true);
+                }
+            }
         }
 
-        private IEnumerator CrossfadeRoutine(AudioClip clip, float duration)
+        /// <summary>True while the clip is playing, including during its fade-out.</summary>
+        public bool IsPlaying(AudioClip clip) => FindTrack(clip) != null;
+
+        private Track FindTrack(AudioClip clip)
         {
-            AudioSource incoming = _activeSource == _sourceA ? _sourceB : _sourceA;
-            AudioSource outgoing = _activeSource;
+            if (clip == null) return null;
+            foreach (var track in _tracks)
+            {
+                if (track.source.clip == clip) return track;
+            }
+            return null;
+        }
 
-            float outgoingStart = outgoing.volume;
+        // Reuses a stopped source, or creates a new one: the number of simultaneous tracks is not capped.
+        private Track GetFreeTrack()
+        {
+            foreach (var track in _tracks)
+            {
+                if (track.source.clip == null) return track;
+            }
 
-            incoming.clip = clip;
-            incoming.volume = 0f;
-            incoming.Play();
+            var go = new GameObject($"MusicSource_{_tracks.Count}");
+            go.transform.SetParent(transform);
+            var source = go.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = true;
+            source.spatialBlend = 0f;
+            source.outputAudioMixerGroup = AudioManager.Config != null ? AudioManager.Config.MusicGroup : null;
 
+            var newTrack = new Track { source = source };
+            _tracks.Add(newTrack);
+            return newTrack;
+        }
+
+        private void FadeTo(Track track, float volume, float fadeDuration, bool stopAtEnd)
+        {
+            if (track.fade != null)
+            {
+                StopCoroutine(track.fade);
+                track.fade = null;
+            }
+            if (fadeDuration < 0f) fadeDuration = defaultFadeDuration;
+            volume = Mathf.Clamp01(volume);
+
+            // No fade: apply at once. A slider calls SetVolume every frame and must not start a coroutine each time.
+            if (fadeDuration <= 0f)
+            {
+                track.source.volume = volume;
+                if (stopAtEnd) Release(track);
+                return;
+            }
+            track.fade = StartCoroutine(FadeRoutine(track, volume, fadeDuration, stopAtEnd));
+        }
+
+        private static void Release(Track track)
+        {
+            track.source.Stop();
+            track.source.clip = null;
+        }
+
+        // Unscaled time: fades keep running while the game is paused (Time.timeScale = 0).
+        private IEnumerator FadeRoutine(Track track, float targetVolume, float duration, bool stopAtEnd)
+        {
+            var source = track.source;
+            float startVolume = source.volume;
             float elapsed = 0f;
+
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                incoming.volume = t;
-                outgoing.volume = Mathf.Lerp(outgoingStart, 0f, t);
+                elapsed += Time.unscaledDeltaTime;
+                source.volume = Mathf.Lerp(startVolume, targetVolume, elapsed / duration);
                 yield return null;
             }
 
-            incoming.volume = 1f;
-            outgoing.Stop();
-            outgoing.clip = null;
-
-            _activeSource = incoming;
-            _crossfadeCoroutine = null;
-        }
-
-        private IEnumerator FadeOutBothRoutine(float duration)
-        {
-            float startVolumeA = _sourceA.volume;
-            float startVolumeB = _sourceB.volume;
-            float elapsed = 0f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = elapsed / duration;
-                _sourceA.volume = Mathf.Lerp(startVolumeA, 0f, t);
-                _sourceB.volume = Mathf.Lerp(startVolumeB, 0f, t);
-                yield return null;
-            }
-
-            _sourceA.Stop();
-            _sourceA.clip = null;
-            _sourceB.Stop();
-            _sourceB.clip = null;
-            _crossfadeCoroutine = null;
+            source.volume = targetVolume;
+            if (stopAtEnd) Release(track);
+            track.fade = null;
         }
     }
 }

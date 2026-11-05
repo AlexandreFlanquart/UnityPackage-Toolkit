@@ -1,44 +1,41 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace MyUnityPackage.Toolkit
 {
     /// <summary>
-    /// Plays a sound when the attached <see cref="Button"/> is clicked.
-    /// Assign <see cref="clickCue"/> (preferred) or fall back to a raw <see cref="clickClip"/>.
+    /// Plays a sound through <see cref="SFXManager"/> when the attached <see cref="Button"/> is clicked.
+    /// Uses <see cref="clickSound"/>, or the default click of the <see cref="AudioConfigSO"/> when empty.
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class UIButtonSound : MonoBehaviour
     {
-        [Tooltip("Preferred: AudioCueSO with clip variants, cooldown, and volume randomisation.")]
-        [SerializeField] private AudioCueSO clickCue;
-        [Tooltip("Legacy fallback used when no AudioCueSO is assigned.")]
-        [SerializeField] private AudioClip clickClip;
+        [Tooltip("Sound of this button. Leave empty to play the default click of the AudioConfig.")]
+        [FormerlySerializedAs("clickCue")]
+        [SerializeField] private SoundSO clickSound;
+
+        private Button _button;
 
         private void Awake()
         {
-            GetComponent<Button>().onClick.AddListener(OnClick);
+            _button = GetComponent<Button>();
+            _button.onClick.AddListener(OnClick);
+        }
+
+        private void OnDestroy()
+        {
+            if (_button != null) _button.onClick.RemoveListener(OnClick);
         }
 
         private void OnClick()
         {
-            // Prefer UIAudioManager + cue
-            if (clickCue != null)
-            {
-                var uiAudio = ServiceLocator.GetService<UIAudioManager>();
-                if (uiAudio != null)
-                {
-                    uiAudio.Play(clickCue);
-                    return;
-                }
-            }
+            var sound = clickSound;
+            if (sound == null && AudioManager.Config != null) sound = AudioManager.Config.DefaultClickSound;
+            if (sound == null) return;
 
-            // Legacy path: raw clip through AudioPlaybackService
-            if (clickClip != null)
-            {
-                var legacy = ServiceLocator.GetService<AudioPlaybackService>();
-                legacy?.PlaySFX(clickClip);
-            }
+            var sfx = ServiceLocator.GetService<SFXManager>();
+            if (sfx != null) sfx.PlayUI(sound);
         }
     }
 }

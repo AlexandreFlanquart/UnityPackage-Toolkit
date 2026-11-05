@@ -1,24 +1,16 @@
-using System.Collections;
 using UnityEngine;
 
 namespace MyUnityPackage.Toolkit
 {
     public class GameManagerToolkit : MonoBehaviour
     {
-     
         private void Start()
         {
-            SetupGame();
-            ServiceLocator.GetService<AudioPlaybackService>().PlayMusic((AudioClip)Resources.Load("Music"));
-            
-           
-          
-        }
-
-      
-        private void SetupGame()
-        {
-            AudioManager.Initialize();
+            var musicManager = ServiceLocator.GetService<MusicManager>();
+            if (musicManager != null)
+            {
+                musicManager.Play(Resources.Load<AudioClip>("Music"));
+            }
         }
 
         public void StartGame()
@@ -28,7 +20,7 @@ namespace MyUnityPackage.Toolkit
 
         public void EndGame()
         {
-            MUPLogger.Info("EndGame");   
+            MUPLogger.Info("EndGame");
         }
     }
 }

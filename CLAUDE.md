@@ -15,18 +15,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 Runtime/Scripts/
 ├── Static/          ServiceLocator
-├── Managers/        AudioManager*, MusicManager, AmbienceManager, SFXManager,
-│                    UIAudioManager, AudioFocusHandler, VoiceManager
-├── Audio/           AudioPlaybackService (legacy), AudioUpdater, IAudioService,
-│                    AudioManagerService, VoiceAgent
+├── Managers/        AudioManager*, MusicManager, SFXManager, VoiceManager,
+│                    AudioFocusHandler
+├── Audio/           AudioUpdater, VoiceAgent, RandomIntervalSound, SoundHandle
 ├── UI/              UIButtonSound, CanvasHelper, UI_Base
 ├── ObjectPool/      MUP_ObjectPool, MUP_ObjectPoolLocator
 ├── Localization/    LanguageSwitcher (#if I2LOC_PRESENT)
 ├── Utils/           MUPLogger*, TimerHandler, SceneLoader, ProjectVersionDisplay
 └── ScriptableObjects/
-    ├── AudioSettings/  AudioSettingsSO (per-channel config)
-    └── AudioCue/       AudioCueSO (sound definition)
-Samples/Scripts/     Usage examples — do not treat as authoritative architecture
+    ├── AudioConfig/    AudioConfigSO (mixer, default groups and volumes)
+    └── Sound/          SoundSO (sound asset: variants, randomisation, limits), VoiceLineSO (localized voice line)
+Samples~/Scripts/    Usage examples — do not treat as authoritative architecture
 Docs/                Human-readable docs per system
 ```
 
@@ -56,43 +55,23 @@ The define `I2LOC_PRESENT` is set automatically via `versionDefines` in the asmd
 
 ## Audio system architecture
 
-The audio system has two layers:
-1. **Volume/mute**: `AudioManager` (static) controls Unity AudioMixer exposed parameters.
-2. **Playback**: dedicated MonoBehaviour managers, each accessed via `ServiceLocator`.
+Full reference: `Docs/AudioSystem.md`.
 
-### AudioManager (static)
-Manages `AudioType` enum: `Music | SFX | Voice | Ambience | UI`.  
-Maps each type to an AudioMixer exposed float parameter **named exactly** after the enum value string (`"Music"`, `"SFX"`, etc.).  
-The mixer asset must live at `Resources/AudioMixer`.  
-Per-channel `AudioSettingsSO` assets auto-load from `Resources/AudioSettings/{Music|SFX|Voice|Ambience|UI}SettingsSO` — a missing SO just keeps that channel's hardcoded default volume.
+- **Config**: one `AudioConfigSO` at `Resources/AudioConfig` (`AudioManager.ConfigResourcePath`) references the mixer, the default output groups (Music, Voice, SFX, UI, World), the default bus volumes, the default click sound and the mute sprites. No string lookup of mixer groups.
+- **Volumes**: `AudioManager` (static) drives three `AudioBus` values — `Music = 0`, `SFX = 1`, `Voice = 2` (serialized, do not reorder) — each matching a mixer exposed parameter **named exactly** after it. It does not persist volumes: consumers save from `AudioManager.VolumeChanged` and restore with `SetVolume`.
+- **Players** (ServiceLocator, one GameObject):
 
-### Playback managers (ServiceLocator)
-
-| Manager | Sources | Use for |
+| Player | Rule | Key API |
 |---|---|---|
-| `MusicManager` | 2 (A/B crossfade) | Background music, smooth transitions |
-| `AmbienceManager` | 3 independent loops | Environmental layers (wind, rain, crowd) |
-| `SFXManager` | Pool of 16 | One-shot game SFX, 2D or fire-and-forget 3D |
-| `UIAudioManager` | 1 (`PlayOneShot`) | UI clicks, hover — stacks without interruption |
-| `VoiceManager` | 1 (queue) | Dialogue, narration, streaming, I2LOC language paths |
-| `AudioPlaybackService` | 3 (Music/SFX/Voice) | **Legacy** — kept for backward compat |
+| `MusicManager` | N simultaneous 2D loops (music and ambience), keyed by `AudioClip` | `Play(clip, volume, fade)`, `SetVolume`, `Stop`, `StopAll`, `IsPlaying` |
+| `VoiceManager` | One voice at a time, a new one interrupts | `Play(VoiceLineSO)`, `Play(clip)`, `Stop`, `VoiceEnded` |
+| `SFXManager` | Pooled one-shots: 2D, UI, 3D at a position | `Play(sound)`, `Play(sound, position)`, `PlayUI(sound)`, `Play(clip)` → `SoundHandle` |
 
-### AudioCueSO
-The central sound definition. Assign to a field; pass to the appropriate manager:
-```csharp
-[SerializeField] private AudioCueSO _hitCue;
-_sfxManager.Play(_hitCue, transform.position); // 3D
-_uiAudio.Play(_clickCue);                       // UI
-```
-`AudioCueSO` handles: clip anti-repeat, volume/pitch randomisation, cooldown, maxInstances.  
-`CanPlay()` / `OnPlay()` / `OnStop()` are called internally by managers — do not call them manually.
-
-### AudioMixer setup (required in each Unity project)
-1. Create an `AudioMixer` with groups: `Music`, `Ambience`, `SFX` (children: `SFX/World`, `SFX/UI`), `Voice`.
-2. Expose float parameters named `Music`, `SFX`, `Voice`, `Ambience`, `UI`.
-3. Place the asset at `Resources/AudioMixer`.
-
-For ducking (voice over music), wire an **Audio Mixer Send** from the Voice group into a **Duck Volume** effect on the Music and Ambience groups — no code required.
+- **Components**: `VoiceAgent` (voice on enable / hover / click), `UIButtonSound` (its `SoundSO` or the config default click), `RandomIntervalSound` (random variant at random intervals on its own `AudioSource`), `AudioUpdater` (bus slider + mute), `AudioFocusHandler`.
+- **World loops need no script**: a plain looping `AudioSource` routed to the World group.
+- `SoundSO.CanPlay()` / `OnPlay()` / `OnStop()` are called by `SFXManager` only. Naming: "sound" = a `SoundSO` asset; "clip" = a raw `AudioClip` (music, voices).
+- `SoundHandle` uses a per-source generation counter: a stale handle never stops a sound that reused its source. `VoiceAgent` stops only its own playback through `VoiceManager.PlayId`.
+- "Is this source still playing" goes through `AudioManager.IsBusy` (also true while a non-preloaded clip loads after `Play()`).
 
 ## Object pool system
 
@@ -119,7 +98,7 @@ when reused — do this on get, not in `Awake`/`OnEnable` (pooled instances only
 
 - `UI_Base` — abstract base for all canvases; exposes `Show()` / `Hide()` / `IsVisible` via `CanvasHelper` (fetched in `Awake`, not `Start`).
 - `CanvasHelper` — requires `Canvas` + `CanvasGroup` on the same GameObject; toggles both `enabled` and `interactable`/`blocksRaycasts` together, always explicitly on `Awake` (not just when `hideOnStart` is true) so the two never start out of sync.
-- `UIButtonSound` — assign a `AudioCueSO` (`clickCue`) for sounds; falls back to a raw `AudioClip` via `AudioPlaybackService` if no cue is set.
+- `UIButtonSound` — plays its `clickSound` through `SFXManager.PlayUI`, or `AudioConfigSO.DefaultClickSound` when empty. A button without it is silent.
 
 ## Timer system
 

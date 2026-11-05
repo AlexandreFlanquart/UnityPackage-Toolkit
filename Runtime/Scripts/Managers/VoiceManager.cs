@@ -1,321 +1,118 @@
-using System.Collections;
-using System.Collections.Generic;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
+using System;
 using UnityEngine;
-using UnityEngine.Networking;
-#if I2LOC_PRESENT
-using I2.Loc;
-#endif
 
 namespace MyUnityPackage.Toolkit
 {
     /// <summary>
-    /// VoiceManager handles the playback, streaming, and queuing of voice audio clips.
-    /// It supports both local and streamed audio, manages a cache for performance,
-    /// and provides global volume and mute controls.
+    /// Plays one voice at a time (instructions, dialogue lines). A new voice always interrupts the current one.
+    /// <see cref="VoiceLineSO"/> picks the clip matching the current I2 Localization language.
     /// </summary>
+    [DisallowMultipleComponent]
     public class VoiceManager : MonoBehaviour
     {
-        [SerializeField] private bool audioStreaming = false;
-        [SerializeField] private AudioSource audioSource = default;
-        [SerializeField] private float globalVolume = 1f;
+        [Tooltip("Optional. Created automatically when empty and routed to the Voice group of the AudioConfig.")]
+        [SerializeField] private AudioSource audioSource;
 
-        private bool noClip = false;
-        private Dictionary<string, AudioClip> clipCache = new Dictionary<string, AudioClip>();
-        private Queue<string> voiceQueue = new Queue<string>();
-        private bool isProcessingQueue = false;
+        private bool _isPlaying;
+        private bool _sourceReady;
+        private int _playId;
 
-        public AudioClip CurrentClip { get => audioSource.clip; }
-        public bool IsAudioStreaming { get => audioStreaming; }
-        public float GlobalVolume 
-        { 
-            get => globalVolume;
-            set 
-            {
-                globalVolume = Mathf.Clamp01(value);
-                audioSource.volume = globalVolume;
-            }
-        }
+        /// <summary>Raised when the current voice reaches its end. Not raised when it is interrupted or stopped.</summary>
+        public event Action VoiceEnded;
 
-        void Awake()
+        /// <summary>Clip currently loaded on the voice source, or null.</summary>
+        public AudioClip CurrentClip => audioSource != null ? audioSource.clip : null;
+
+        /// <summary>True while a voice is playing.</summary>
+        public bool IsPlaying => _isPlaying;
+
+        /// <summary>Incremented on every <see cref="Play(AudioClip)"/>: identifies one playback of a voice.</summary>
+        public int PlayId => _playId;
+
+        private void Awake()
         {
-            ServiceLocator.AddService<VoiceManager>(gameObject);
-            if (audioSource == null)
-                audioSource = GetComponent<AudioSource>();
-            if (audioSource.outputAudioMixerGroup == null)
-                audioSource.outputAudioMixerGroup = AudioManager.GetAudioMixerGroup(AudioManager.AudioType.Voice);
-            audioSource.volume = globalVolume;
-#if I2LOC_PRESENT
-            LocalizationManager.OnLocalizeEvent.AddListener(OnLanguageChanged);
-#endif
+            EnsureSource();
+            ServiceLocator.AddService<VoiceManager>(gameObject, true);
+            MUPLogger.Info("VoiceManager initialized.");
         }
 
-        void OnDestroy()
+        // Also called from Play: a VoiceAgent enabled before this Awake can already reach the manager
+        // (ServiceLocator falls back to a scene search).
+        private void EnsureSource()
+        {
+            if (_sourceReady) return;
+
+            if (audioSource == null)
+            {
+                var go = new GameObject("VoiceSource");
+                go.transform.SetParent(transform);
+                audioSource = go.AddComponent<AudioSource>();
+            }
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            audioSource.spatialBlend = 0f;
+            if (audioSource.outputAudioMixerGroup == null && AudioManager.Config != null)
+            {
+                audioSource.outputAudioMixerGroup = AudioManager.Config.VoiceGroup;
+            }
+            _sourceReady = true;
+        }
+
+        // The mixer ignores SetFloat until the scene has started: push the bus volumes now.
+        private void Start()
+        {
+            AudioManager.ApplyAll();
+        }
+
+        private void OnDestroy()
         {
             ServiceLocator.RemoveService<VoiceManager>(this);
-#if I2LOC_PRESENT
-            LocalizationManager.OnLocalizeEvent.RemoveListener(OnLanguageChanged);
-#endif
-            ClearCache();
         }
 
-#if I2LOC_PRESENT
-        private void OnLanguageChanged()
+        // AudioListener.pause (app in background) also reports isPlaying = false: not an end of voice.
+        private void Update()
         {
-            ClearCache();
-            MUPLogger.Info("VoiceManager: language changed, cache cleared.");
-        }
-#endif
-
-        // Single place to branch on I2Loc presence for path/key building, instead of
-        // scattering #if blocks across every caller below.
-        private static string LanguagePathPrefix
-        {
-            get
+            if (_isPlaying && !AudioManager.IsBusy(audioSource) && !AudioListener.pause)
             {
-#if I2LOC_PRESENT
-                return LocalizationManager.CurrentLanguageCode + "/";
-#else
-                return string.Empty;
-#endif
+                _isPlaying = false;
+                VoiceEnded?.Invoke();
             }
         }
 
-        private static string CacheKeyPrefix
+        /// <summary>Plays the line in the current language, interrupting any voice in progress.</summary>
+        public void Play(VoiceLineSO voiceLine)
         {
-            get
+            if (voiceLine == null)
             {
-#if I2LOC_PRESENT
-                return LocalizationManager.CurrentLanguageCode + "_";
-#else
-                return string.Empty;
-#endif
-            }
-        }
-
-        // Configure a GameObject as a VoiceAgent with delay and keys
-        public void ConfigVoiceElement(GameObject pElement, float pDelay, params string[] pKeys)
-        {
-            VoiceAgent agent = pElement.GetComponent<VoiceAgent>();
-            if (!agent)
-            {
-                agent = pElement.AddComponent<VoiceAgent>();
-            }
-            agent.Initialize(pDelay, pKeys);
-        }
-
-        // Overload for ConfigVoiceElement without delay
-        public void ConfigVoiceElement(GameObject pElement, params string[] pKeys)
-        {
-            ConfigVoiceElement(pElement, 0, pKeys);
-        }
-
-        // Play a sequence of voices, optionally with a delay between them.
-        // Always routed through the queue (even for a single key) so a call made while another
-        // sequence is already playing gets appended instead of hijacking the shared AudioSource directly.
-        public bool PlayVoices(float pDelay, params string[] pKeys)
-        {
-            if (audioSource.mute || pKeys == null || pKeys.Length == 0)
-            {
-                return false;
-            }
-
-            StartCoroutine(PlayVoicesQueued(pKeys, pDelay));
-            return true;
-        }
-
-        // Play a single voice by key (from cache, streaming, or loading from assets)
-        private void PlayVoice(string pKey)
-        {
-            if (string.IsNullOrEmpty(pKey)) return;
-
-            noClip = false;
-      
-            if(audioStreaming)
-            {
-                string audioUrl = Application.streamingAssetsPath + $"/Voices/{LanguagePathPrefix}{pKey}.mp3";
-                StartCoroutine(AudioStreaming(audioUrl));
+                MUPLogger.Warning("VoiceManager.Play called with a null VoiceLineSO.");
                 return;
             }
-            else
-            {
-                string cacheKey = $"{CacheKeyPrefix}{pKey}";
-                if (clipCache.TryGetValue(cacheKey, out AudioClip cachedClip))
-                {
-                    PlayClip(cachedClip);
-                    return;
-                }
-
-                AudioClip clip = LoadAudioClip(pKey);
-
-                if (clip != null)
-                {
-                    clipCache[cacheKey] = clip;
-                }
-                else
-                {
-                    MUPLogger.Warning($"VoiceManager: no AudioClip found for key '{pKey}' (checked Assets/Voices, Resources/Voices, and Resources root).");
-                }
-                PlayClip(clip);
-            }   
+            Play(voiceLine.GetClip());
         }
 
-        // Play the given AudioClip through the AudioSource
-        private void PlayClip(AudioClip pClip)
+        /// <summary>Plays a clip, interrupting any voice in progress. Playing the current clip again restarts it.</summary>
+        public void Play(AudioClip clip)
         {
-            if (pClip == null)
-            {
-                noClip = true;
-                return;
-            }
-
-            if (audioSource.clip != null)
-            {
-                audioSource.clip.UnloadAudioData();
-            }
-
-            audioSource.clip = pClip;
-            audioSource.Play();
-            MUPLogger.Info($"VoiceManager: playing '{pClip.name}'.", this);
-        }
-
-        // Coroutine to play a queue of voices with optional delay between each
-        private IEnumerator PlayVoicesQueued(string[] pKeys, float pDelay)
-        {
-            if (isProcessingQueue)
-            {
-                foreach (var key in pKeys)
-                {
-                    voiceQueue.Enqueue(key);
-                }
-                yield break;
-            }
-
-            isProcessingQueue = true;
-
-            // Ajouter les clés initiales à la file d'attente
-            foreach (var key in pKeys)
-            {
-                voiceQueue.Enqueue(key);
-            }
-
-            // Traiter toutes les voix dans la file d'attente
-            while (voiceQueue.Count > 0)
-            {
-                string nextKey = voiceQueue.Dequeue();
-                PlayVoice(nextKey);
-                
-                // Attendre que la voix soit terminée
-                while (!noClip && audioSource.isPlaying)
-                {
-                    yield return null;
-                }
-
-                yield return new WaitForEndOfFrame();
-                
-                // Ajouter le délai entre les voix si nécessaire
-                if (pDelay > 0)
-                {
-                    yield return new WaitForSeconds(pDelay);
-                }
-            }
-
-            isProcessingQueue = false;
-        }
-
-        // Toggle mute on the AudioSource and return the new mute state
-        public bool Mute()
-        {
-            audioSource.mute = !audioSource.mute;
-            return audioSource.mute;
-        }
-
-        // Stop all voice playback and clear the queue
-        public void StopVoice()
-        {
-            StopAllCoroutines();
-            voiceQueue.Clear();
-            isProcessingQueue = false;
-            audioSource.Stop();
-            if (audioSource.clip != null)
-            {
-                audioSource.clip.UnloadAudioData();
-                audioSource.clip = null;
-            }
-        }
-
-        // Get the duration of the currently playing voice clip
-        public float GetCurrentVoiceDuration()
-        {
-            return audioSource.clip != null ? audioSource.clip.length : 0f;
-        }
-
-        // Clear and unload all cached audio clips, preserving the currently playing clip
-        private void ClearCache()
-        {
-            AudioClip currentClip = audioSource != null ? audioSource.clip : null;
-            foreach (var clip in clipCache.Values)
-            {
-                if (clip != null && clip != currentClip)
-                {
-                    clip.UnloadAudioData();
-                }
-            }
-            clipCache.Clear();
-        }
-
-        // Coroutine to stream audio from a URL and play it
-        private IEnumerator AudioStreaming(string audioUrl)
-        {
-            using UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip(audioUrl, AudioType.MPEG);
-
-            if (www.downloadHandler is DownloadHandlerAudioClip downloadHandler)
-            {
-                downloadHandler.streamAudio = true;
-            }
-            else
-            {
-                var handler = new DownloadHandlerAudioClip(audioUrl, AudioType.MPEG)
-                {
-                    streamAudio = true
-                };
-                www.downloadHandler = handler;
-            }
-
-            yield return www.SendWebRequest();
-
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                MUPLogger.Error($"VoiceManager: Failed to load audio clip from {audioUrl}. Error: {www.error}");
-                yield break;
-            }
-
-            AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-            if (clip != null)
-            {
-                PlayClip(clip);
-            }
-        }
-
-        private AudioClip LoadAudioClip(string pKey)
-        {
-            AudioClip clip = null;
-#if UNITY_EDITOR
-            string editorPath = $"Assets/Voices/{LanguagePathPrefix}{pKey}";
-            clip = AssetDatabase.LoadAssetAtPath<AudioClip>(editorPath);
-#endif
             if (clip == null)
             {
-                clip = Resources.Load<AudioClip>($"Voices/{LanguagePathPrefix}{pKey}");
-                if (clip == null && !string.IsNullOrEmpty(LanguagePathPrefix))
-                    clip = Resources.Load<AudioClip>($"Voices/{pKey}");
-                if (clip == null)
-                    clip = Resources.Load<AudioClip>(pKey);
+                MUPLogger.Warning("VoiceManager.Play called with a null clip.");
+                return;
             }
 
-            return clip;
+            EnsureSource();
+            audioSource.Stop();
+            audioSource.clip = clip;
+            audioSource.Play();
+            _isPlaying = true;
+            _playId++;
+            MUPLogger.Info($"VoiceManager: playing '{clip.name}'.", this);
+        }
+
+        /// <summary>Stops the current voice.</summary>
+        public void Stop()
+        {
+            if (audioSource != null) audioSource.Stop();
+            _isPlaying = false;
         }
     }
 }

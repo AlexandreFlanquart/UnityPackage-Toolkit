@@ -1,3 +1,46 @@
+## [1.0.8] - 2026-11-05
+Audio system rework. ⚠️ Breaking: see *Migration* below.
+
+### Added
+- Add `AudioConfigSO` (`Resources/AudioConfig`): references the AudioMixer, the default output groups (Music, Voice, SFX, UI, World), the default bus volumes, the default click sound and the mute sprites
+- Add `AudioBus` enum (`Music`, `SFX`, `Voice`), `AudioManager.VolumeChanged` event and `SetVolume(bus, volume, notify: false)`, so volumes can be saved and restored outside the toolkit
+- Add `VoiceLineSO`: one voice line with a clip per language, resolved from the current I2 Localization language (`I2LOC_PRESENT`)
+- Add `RandomIntervalSound`: plays a random variant of a `SoundSO` on its own `AudioSource` at random intervals (e.g. a bird singing from time to time)
+- Add `SoundHandle`, returned by every `SFXManager.Play*` call (`IsPlaying`, `Stop()`), safe after its pooled source is reused
+- Add `SFXManager.PlayUI(sound)`; `SFXManager.Play(sound, position)` now routes to the World group by default and uses a linear rolloff between `spatialMinDistance` and `spatialMaxDistance`
+- Add `VoiceAgent.playOnClick` and `stopOnPointerExit`, and public `Play()` / `Stop()` for UnityEvents (`onEnable` / `activeOnHover` are renamed `playOnEnable` / `playOnHover`)
+- Add `VoiceManager.PlayId`, so a `VoiceAgent` only stops the playback it started
+- Rebuild `AudioExampleScene` to show every audio kind, with generated placeholder sounds
+
+### Changed
+- `MusicManager` plays any number of simultaneous loops keyed by `AudioClip` (`Play(clip, volume, fade)`, `SetVolume`, `Stop`, `StopAll`, `IsPlaying`) instead of one crossfaded track. Fades use unscaled time
+- `VoiceManager` plays one voice at a time and a new voice interrupts the current one (`Play(VoiceLineSO)`, `Play(AudioClip)`, `Stop()`, `VoiceEnded`). Key-based loading from `Resources`/`StreamingAssets`, streaming and the queue are removed
+- `SFXManager` now also plays UI sounds; each sound has its own pooled source, which fixes the pitch of overlapping UI clicks
+- `AudioManager` drives three buses instead of five channels, logs a warning when an exposed parameter is missing, and the players re-apply the bus volumes in `Start` (`AudioMixer.SetFloat` calls made before the scene starts are ignored)
+- `AudioCueSO` renamed `SoundSO` (menu **MyUnityPackage > Audio > Sound**, script GUID kept: existing assets stay valid). Its `audioType` is replaced by `output` (an `AudioMixerGroup`; empty = the player's default group)
+- `UIButtonSound` plays through `SFXManager.PlayUI` and falls back to `AudioConfigSO.DefaultClickSound`; its field `clickCue` is renamed `clickSound` (value kept)
+- `AudioUpdater.audioType` renamed `bus` (`AudioBus`), serialized values preserved; it now follows `VolumeChanged`, so several sliders on the same bus stay in sync, and the mute button keeps its own image when the config has no mute sprites
+- Players treat a clip that is still loading after `Play()` as playing (clips without *Preload Audio Data*)
+
+### Removed
+- `AudioPlaybackService`, `AmbienceManager` (use `MusicManager`), `UIAudioManager` (use `SFXManager.PlayUI`), `IAudioService`, `AudioManagerService`, `AudioSettingsSO` (use `AudioConfigSO`), `UIButtonSound.clickClip`
+- `MusicManager.Play(clip, crossfadeDuration)` → `Play(clip, volume, fadeDuration)` ⚠️ an old `Play(clip, 2f)` still compiles and now means volume 2 (clamped to 1); `Stop(fadeDuration)` → `Stop(clip, fadeDuration)` or `StopAll(fadeDuration)`
+- `SFXManager.Play` returns a `SoundHandle` instead of an `AudioSource`; `Play(AudioCueSO, Vector3?)` is split into `Play(sound)` / `Play(sound, position)`; `PlayRaw` → `Play(clip, volume, output)`
+- `VoiceManager.PlayVoices`, `ConfigVoiceElement`, `Mute`, `GlobalVolume`, `IsAudioStreaming`, `GetCurrentVoiceDuration`; `StopVoice` → `Stop`
+- `VoiceAgent.Initialize`, `SetKeys`, `SetDelay`, `PlayVoice`, `StopVoice` (use `SetVoiceLine`, `Play`, `Stop`)
+- `AudioManager.Initialize`, `InitVolume`, `SetMusicVolume` / `SetSFXVolume` / `SetVoiceVolume` and their getters, `GetAudioSettingsFromAudioType`, `AudioSetting`; `UIAudioManager.PlayClick`
+
+### Migration
+1. Mixer: keep groups `Music`, `Voice`, `SFX` (add children `SFX/UI`, `SFX/World`) and expose parameters `Music`, `Voice`, `SFX`. `Ambience` and `UI` exposed parameters are no longer used.
+2. Create `Resources/AudioConfig` and fill it; delete `Resources/AudioSettings/*SettingsSO` assets.
+3. Replace `AudioPlaybackService` with `MusicManager` / `SFXManager` / `VoiceManager`: `PlayMusic(clip)` → `MusicManager.Play(clip)`, `PlaySFX(clip)` → `SFXManager.Play(clip)` (keep the returned `SoundHandle` to stop it).
+4. `AmbienceManager.SetLayer(i, clip, volume)` → `MusicManager.Play(clip, volume)`; `UIAudioManager.Play(AudioCueSO)` → `SFXManager.PlayUI(SoundSO)`.
+5. `AudioManager.AudioType` → `AudioBus`; `AudioManager.GetAudioMixerGroup(type)` → `AudioManager.Config.MusicGroup` / `VoiceGroup` / `SFXGroup` / `UIGroup` / `WorldGroup`.
+6. In code, replace `AudioCueSO` with `SoundSO`. Set `SoundSO.output` where a sound relied on `audioType` (UI sounds: the UI group), and assign `VoiceAgent.voiceLine` (keys are gone).
+7. `UIButtonSound.clickClip` is gone with no fallback: those buttons now play the config's default click — assign a `SoundSO` to keep a specific sound. Buttons still serialized with the pre-1.0.6 `clickSound` **AudioClip** show a type mismatch: assign a `SoundSO` or leave empty.
+8. `AudioUpdater` components set to the removed `Ambience` (3) or `UI` (4) channels now log a warning and do nothing: set them to `Music` or `SFX`.
+9. `VoiceAgent.activeOnHover` defaulted to `true`; its successor `playOnHover` defaults to `false` (existing values are kept, new components are silent on hover).
+
 ## [1.0.7] - 2026-08-25
 ### Added
 - Add `SafeAreaFitter`: fits a RectTransform to `Screen.safeArea` (notch/punch-hole, rounded corners, status/gesture bars), recomputing only when resolution or orientation actually changes

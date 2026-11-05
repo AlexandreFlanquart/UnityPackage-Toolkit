@@ -1,83 +1,136 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 
 namespace MyUnityPackage.Toolkit
 {
-    public class VoiceAgent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    /// <summary>
+    /// Plays a <see cref="VoiceLineSO"/> through <see cref="VoiceManager"/> without code:
+    /// when the object is shown, when it is hovered (touched, on mobile) and/or when it is clicked.
+    /// Hover and click need a UI raycast target (Image, Text…) on this GameObject.
+    /// </summary>
+    public class VoiceAgent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
-        [SerializeField] private float delay = 0f;
-        [SerializeField] private string[] keys = new string[0];
-        [SerializeField] private bool onEnable = false;
-        [SerializeField] private bool activeOnHover = true;
+        [Tooltip("Line to play.")]
+        [SerializeField] private VoiceLineSO voiceLine;
+        [Tooltip("Seconds to wait before the voice starts.")]
+        [SerializeField, Min(0f)] private float delay = 0f;
+
+        [Header("Triggers")]
+        [Tooltip("Play when this object becomes active (e.g. when its panel opens).")]
+        [FormerlySerializedAs("onEnable")]
+        [SerializeField] private bool playOnEnable = false;
+        [Tooltip("Play when the pointer enters this object. On a touch screen this fires on touch: do not combine with playOnClick, the line would start twice.")]
+        [FormerlySerializedAs("activeOnHover")]
+        [SerializeField] private bool playOnHover = false;
+        [Tooltip("Play when this object is clicked. Clicking again while it speaks restarts the line.")]
+        [SerializeField] private bool playOnClick = false;
+
+        [Header("Stop")]
+        [Tooltip("Stop the voice when the pointer leaves this object. Off: the line plays to the end.")]
+        [SerializeField] private bool stopOnPointerExit = false;
+        [Tooltip("Stop the voice when this object is disabled (e.g. when its panel closes).")]
         [SerializeField] private bool stopOnDisable = true;
 
-        private bool isPlaying = false;
-        private VoiceManager voiceManager;
+        private int _playedId = -1;
+        private Coroutine _delayedPlay;
 
-        private void Awake()
+        private void OnEnable()
         {
-            voiceManager = ServiceLocator.GetService<VoiceManager>();
-            if (voiceManager == null)
-            {
-                MUPLogger.Error("VoiceAgent: VoiceManager not found in ServiceLocator");
-                enabled = false;
-            }
-        }
-
-        private void OnEnable() 
-        {
-            if(onEnable) PlayVoice();
+            if (playOnEnable) Play();
         }
 
         private void OnDisable()
         {
-            if (stopOnDisable && isPlaying)
+            if (stopOnDisable)
             {
-                StopVoice();
+                Stop();
+            }
+            else if (_delayedPlay != null)
+            {
+                // Disabling the component alone does not stop its coroutines.
+                StopCoroutine(_delayedPlay);
+                _delayedPlay = null;
             }
         }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (activeOnHover) PlayVoice();
+            if (playOnHover) Play();
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            if (activeOnHover && isPlaying) StopVoice();
+            if (playOnHover && stopOnPointerExit) Stop();
         }
 
-        public void PlayVoice()
+        public void OnPointerClick(PointerEventData eventData)
         {
-            if (voiceManager == null) return;
-            if (keys == null || keys.Length == 0) return;
-
-            isPlaying = voiceManager.PlayVoices(delay, keys);
+            if (playOnClick) Play();
         }
 
-        public void StopVoice()
+        /// <summary>Plays the line after <see cref="delay"/>. Can be wired to any UnityEvent (e.g. a Button's OnClick).</summary>
+        public void Play()
         {
-            if (voiceManager == null) return;
-            voiceManager.StopVoice();
-            isPlaying = false;
+            if (voiceLine == null) return;
+
+            if (_delayedPlay != null) StopCoroutine(_delayedPlay);
+
+            // A coroutine cannot start on an inactive object: play at once in that case.
+            if (delay > 0f && isActiveAndEnabled) _delayedPlay = StartCoroutine(PlayDelayed());
+            else PlayNow();
         }
 
-        public void Initialize(float pDelay, params string[] pKeys)
+        /// <summary>Stops the voice, only if it is still the one started by this agent.</summary>
+        public void Stop()
         {
-            if (pKeys == null || pKeys.Length == 0) return;
-            keys = pKeys;
-            delay = Mathf.Max(0f, pDelay);
+            if (_delayedPlay != null)
+            {
+                StopCoroutine(_delayedPlay);
+                _delayedPlay = null;
+            }
+
+            if (_playedId < 0) return;
+
+            // Compares the playback id, not the clip: two agents can share the same line.
+            var voiceManager = ServiceLocator.GetService<VoiceManager>();
+            if (voiceManager != null && voiceManager.IsPlaying && voiceManager.PlayId == _playedId)
+            {
+                voiceManager.Stop();
+            }
+            _playedId = -1;
         }
 
-        public void SetKeys(params string[] pKeys)
+        /// <summary>Replaces the line played by this agent.</summary>
+        public void SetVoiceLine(VoiceLineSO line)
         {
-            if (pKeys == null || pKeys.Length == 0) return;
-            keys = pKeys;
+            voiceLine = line;
         }
 
-        public void SetDelay(float pDelay)
+        private IEnumerator PlayDelayed()
         {
-            delay = Mathf.Max(0f, pDelay);
+            // Realtime: the voice still starts when the game is paused (Time.timeScale = 0).
+            yield return new WaitForSecondsRealtime(delay);
+            _delayedPlay = null;
+            PlayNow();
+        }
+
+        private void PlayNow()
+        {
+            var voiceManager = ServiceLocator.GetService<VoiceManager>();
+            if (voiceManager == null)
+            {
+                MUPLogger.Error("VoiceAgent: VoiceManager not found in ServiceLocator.", this);
+                return;
+            }
+
+            if (voiceLine == null) return;
+
+            // PlayId only changes if the line really started (it can have no clip for this language).
+            int previousId = voiceManager.PlayId;
+            voiceManager.Play(voiceLine);
+            _playedId = voiceManager.PlayId != previousId ? voiceManager.PlayId : -1;
         }
     }
 }

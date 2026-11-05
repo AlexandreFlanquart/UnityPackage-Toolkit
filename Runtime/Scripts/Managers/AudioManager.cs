@@ -1,310 +1,187 @@
+using System;
 using UnityEngine;
-using UnityEngine.Audio;
-using System.Collections.Generic;
 
 namespace MyUnityPackage.Toolkit
 {
     /// <summary>
-    /// Static manager for audio settings including volume and mute states for different audio groups (Music, SFX, Voice)
+    /// The three volume buses exposed to the player. Each one matches an AudioMixer exposed parameter of the same name.
+    /// Values are serialized (AudioUpdater): do not reorder.
     /// </summary>
-    public static class AudioManager 
+    public enum AudioBus
     {
-        public enum AudioType
+        Music = 0,
+        SFX = 1,
+        Voice = 2
+    }
+
+    /// <summary>
+    /// Static manager for the volume and mute state of the three <see cref="AudioBus"/> buses.
+    /// Reads its setup from the <see cref="AudioConfigSO"/> at <c>Resources/AudioConfig</c>.
+    /// Volumes are not persisted here: listen to <see cref="VolumeChanged"/> and restore them with <see cref="SetVolume"/>.
+    /// </summary>
+    public static class AudioManager
+    {
+        public const string ConfigResourcePath = "AudioConfig";
+        public const float MuteThreshold = 0.0001f; // -80dB
+        private const float MutedDecibels = -80f;
+        // Restored by ToggleMute when a bus starts muted and has no audible volume to come back to.
+        private const float FallbackUnmuteVolume = 1f;
+
+        private class BusState
         {
-            Music,
-            SFX,
-            Voice,
-            Ambience,
-            UI
-        }
-        public class AudioSetting
-        {
-            public string AUDIO_NAME;
-            public float defaultVolume;
-            public float currentVolume;
-            public float beforeMutedVolume;
-            public bool isMuted;
-            public AudioSettingsSO settingsSO; // Référence au SO
+            public float volume;
+            public float volumeBeforeMute;
         }
 
-        private static AudioMixer _audioMixer;
-        private static AudioMixer AudioMixer
+        private static AudioConfigSO _config;
+        private static bool _configLoadAttempted;
+        private static BusState[] _buses;
+        private static bool _missingParameterReported;
+
+        /// <summary>Raised whenever a bus volume changes (slider, mute toggle or code), with the new linear volume [0, 1].</summary>
+        public static event Action<AudioBus, float> VolumeChanged;
+
+        /// <summary>Project audio configuration, loaded once from <c>Resources/AudioConfig</c>. Null if missing.</summary>
+        public static AudioConfigSO Config
         {
             get
             {
-                if (_audioMixer == null)
+                // Loaded and reported once: a missing config must not log on every sound played.
+                if (_config == null && !_configLoadAttempted)
                 {
-                    _audioMixer = Resources.Load<AudioMixer>("AudioMixer");
-                    if (_audioMixer == null)
+                    _configLoadAttempted = true;
+                    _config = Resources.Load<AudioConfigSO>(ConfigResourcePath);
+                    if (_config == null)
                     {
-                        MUPLogger.Error("AudioMixer not found in Resources folder. Please ensure it exists at 'Resources/AudioMixer'");
+                        MUPLogger.Error($"AudioConfigSO not found. Create one at 'Resources/{ConfigResourcePath}'.");
+                    }
+                    else if (_config.Mixer == null)
+                    {
+                        MUPLogger.Warning($"AudioConfigSO '{_config.name}' has no mixer: volume sliders will have no effect.", _config);
                     }
                 }
-                return _audioMixer;
+                return _config;
             }
-        }
-
-        private static AudioSetting musicSetting;
-        private static AudioSetting sfxSetting;
-        private static AudioSetting voiceSetting;
-        private static AudioSetting ambienceSetting;
-        private static AudioSetting uiSetting;
-        private static Dictionary<AudioType, AudioSetting> audioSettings;
-
-        private static void EnsureInitialized()
-        {
-            if (audioSettings == null)
-            {
-                Initialize();
-            }
-        }
-
-        // Default values
-        public const float MuteThreshold = 0.0001f; // -80dB
-        private const float MAX_VOLUME = 1f; // 0dB
-
-        public static AudioSetting GetAudioSettingsFromAudioType(AudioType audioType)
-        {
-            EnsureInitialized();
-            return audioSettings[audioType];
         }
 
         #region Initialization
-        /// <summary>
-        /// Initializes the AudioManager and sets default volumes
-        /// </summary>
-        public static void Initialize()
+        // Static state survives Play mode when domain reload is disabled: reset it explicitly.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
         {
-            musicSetting    = new AudioSetting { AUDIO_NAME = AudioType.Music.ToString(),    defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            sfxSetting      = new AudioSetting { AUDIO_NAME = AudioType.SFX.ToString(),      defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            voiceSetting    = new AudioSetting { AUDIO_NAME = AudioType.Voice.ToString(),     defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            ambienceSetting = new AudioSetting { AUDIO_NAME = AudioType.Ambience.ToString(), defaultVolume = 0.7f, currentVolume = 0.7f, isMuted = false };
-            uiSetting       = new AudioSetting { AUDIO_NAME = AudioType.UI.ToString(),       defaultVolume = 0.8f, currentVolume = 0.8f, isMuted = false };
-            audioSettings = new Dictionary<AudioType, AudioSetting>
-            {
-                { AudioType.Music,    musicSetting    },
-                { AudioType.SFX,      sfxSetting      },
-                { AudioType.Voice,    voiceSetting    },
-                { AudioType.Ambience, ambienceSetting },
-                { AudioType.UI,       uiSetting       }
-            };
-            LoadAndApplyAudioSettingsSO();
+            _config = null;
+            _configLoadAttempted = false;
+            _buses = null;
+            _missingParameterReported = false;
+            VolumeChanged = null;
         }
 
-        private static void LoadAndApplyAudioSettingsSO()
+        private static void EnsureInitialized()
         {
-            MUPLogger.Info("LoadAndApplyAudioSettingsSO");
-            var musicSO = Resources.Load<AudioSettingsSO>("AudioSettings/MusicSettingsSO");
-            var sfxSO = Resources.Load<AudioSettingsSO>("AudioSettings/SFXSettingsSO");
-            var voiceSO = Resources.Load<AudioSettingsSO>("AudioSettings/VoiceSettingsSO");
-            var ambienceSO = Resources.Load<AudioSettingsSO>("AudioSettings/AmbienceSettingsSO");
-            var uiSO = Resources.Load<AudioSettingsSO>("AudioSettings/UISettingsSO");
+            if (_buses != null) return;
 
-            if (musicSO != null)
+            var busCount = Enum.GetValues(typeof(AudioBus)).Length;
+            _buses = new BusState[busCount];
+            for (int i = 0; i < busCount; i++)
             {
-                MUPLogger.Info("MusicSettingsSO loaded");
-                musicSetting.settingsSO = musicSO;
-                SetVolume(AudioType.Music, musicSO.defaultVolume);
+                float volume = Config != null ? Config.GetDefaultVolume((AudioBus)i) : 1f;
+                _buses[i] = new BusState { volume = volume, volumeBeforeMute = volume > MuteThreshold ? volume : FallbackUnmuteVolume };
             }
-            if (sfxSO != null)
-            {
-                sfxSetting.settingsSO = sfxSO;
-                SetVolume(AudioType.SFX, sfxSO.defaultVolume);
-            }
-            if (voiceSO != null)
-            {
-                voiceSetting.settingsSO = voiceSO;
-                SetVolume(AudioType.Voice, voiceSO.defaultVolume);
-            }
-            if (ambienceSO != null)
-            {
-                ambienceSetting.settingsSO = ambienceSO;
-                SetVolume(AudioType.Ambience, ambienceSO.defaultVolume);
-            }
-            if (uiSO != null)
-            {
-                uiSetting.settingsSO = uiSO;
-                SetVolume(AudioType.UI, uiSO.defaultVolume);
-            }
-        }
-
-        // Méthodes d'accès aux SO
-        public static AudioSettingsSO GetAudioSettingsSO(AudioType audioType)
-        {
-            return GetAudioSettingsFromAudioType(audioType).settingsSO;
-        }
-        #endregion
-
-        #region Volume Control Methods
-
-        public static void InitVolume(AudioType audioType, float volume)
-        {
-            EnsureInitialized();
-            InitVolume(GetAudioSettingsFromAudioType(audioType), volume);
-        }
-
-        private static void InitVolume(AudioSetting audioSetting, float volume)
-        {
-            MUPLogger.Info("Init volume " + audioSetting.AUDIO_NAME);
-            audioSetting.currentVolume = volume;
-            audioSetting.defaultVolume = volume;
+            MUPLogger.Info("AudioManager initialized.");
         }
 
         /// <summary>
-        /// Sets the volume for a specific audio group
+        /// Pushes every bus volume to the AudioMixer again. Called by the players in <c>Start</c>:
+        /// <c>AudioMixer.SetFloat</c> calls made before the first <c>Start</c> of a scene are ignored by the mixer.
         /// </summary>
-        /// <param name="parameter">The exposed parameter name in the AudioMixer</param>
-        /// <param name="volume">Volume value between 0 and 1</param>
-        private static void SetVolume(AudioSetting audioSetting, float volume)
+        public static void ApplyAll()
         {
-            MUPLogger.Info("Set volume " + audioSetting.AUDIO_NAME + " to " + volume);
-            if (AudioMixer == null) return;
-            var previousVolume = audioSetting.currentVolume;
-
-            volume = Mathf.Clamp(volume, 0f, MAX_VOLUME);
-            bool shouldMute = volume <= MuteThreshold;
-
-            if (shouldMute && !audioSetting.isMuted)
+            EnsureInitialized();
+            for (int i = 0; i < _buses.Length; i++)
             {
-                audioSetting.beforeMutedVolume = Mathf.Max(previousVolume, MuteThreshold);
+                Apply((AudioBus)i);
             }
-
-            if (!shouldMute)
-            {
-                audioSetting.beforeMutedVolume = volume;
-            }
-
-            // Convert linear volume (0-1) to dB (-80 to 0)
-            float dB = shouldMute ? -80f : Mathf.Log10(Mathf.Max(volume, MuteThreshold)) * 20f;
-            AudioMixer.SetFloat(audioSetting.AUDIO_NAME, dB);
-
-            audioSetting.currentVolume = shouldMute ? 0f : volume;
-            audioSetting.isMuted = shouldMute;
         }
 
-        /// <summary>
-        /// Gets the current volume for a specific audio group
-        /// </summary>
-        /// <param name="parameter">The exposed parameter name in the AudioMixer</param>
-        /// <returns>Volume value between 0 and 1</returns>
-        private static float GetVolume(string parameter)
-        {
-            if (AudioMixer == null) return 0f;
-
-            float dB;
-            AudioMixer.GetFloat(parameter, out dB);
-            return dB <= -80f ? 0f : Mathf.Pow(10f, dB / 20f);
-        }
-        #endregion
-
-        #region Public Volume Methods
-        // Music Volume
-        public static void SetMusicVolume(float volume)
+        // Null for a value outside the enum, e.g. an AudioUpdater still serialized with the removed Ambience (3) or UI (4).
+        private static BusState GetState(AudioBus bus)
         {
             EnsureInitialized();
-            SetVolume(musicSetting, volume);
-        }
-        public static float GetMusicVolume()
-        {
-            EnsureInitialized();
-            return GetVolume(musicSetting.AUDIO_NAME);
-        }
+            if ((uint)bus < (uint)_buses.Length) return _buses[(int)bus];
 
-        // SFX Volume
-        public static void SetSFXVolume(float volume)
-        {
-            EnsureInitialized();
-            SetVolume(sfxSetting, volume);
-        }
-        public static float GetSFXVolume()
-        {
-            EnsureInitialized();
-            return GetVolume(sfxSetting.AUDIO_NAME);
-        }
-
-        // Voice Volume
-        public static void SetVoiceVolume(float volume)
-        {
-            EnsureInitialized();
-            SetVolume(voiceSetting, volume);
-        }
-        public static float GetVoiceVolume()
-        {
-            EnsureInitialized();
-            return GetVolume(voiceSetting.AUDIO_NAME);
-        }
-
-        public static void SetVolume(AudioType audioType, float volume)
-        {
-            EnsureInitialized();
-            SetVolume(GetAudioSettingsFromAudioType(audioType), volume);
-        }
-        public static float GetVolume(AudioType audioType)
-        {
-            EnsureInitialized();
-            return GetVolume(audioType.ToString());
-        }
-
-        /// <summary>
-        /// Retrieve an <see cref="AudioMixerGroup"/> that matches the provided <see cref="AudioType"/>.
-        /// </summary>
-        /// <param name="audioType">The audio type used to look for a matching mixer group.</param>
-        /// <returns>The first matching <see cref="AudioMixerGroup"/> or <c>null</c> if none could be found.</returns>
-        public static AudioMixerGroup GetAudioMixerGroup(AudioType audioType)
-        {
-            if (AudioMixer == null)
-            {
-                return null;
-            }
-
-            var groups = AudioMixer.FindMatchingGroups(audioType.ToString());
-            if (groups != null && groups.Length > 0)
-            {
-                return groups[0];
-            }
-
-            MUPLogger.Warning($"AudioMixer group '{audioType}' not found. Ensure a matching group exists in the AudioMixer.");
+            MUPLogger.Warning($"AudioManager: unknown bus value {(int)bus}. Valid buses: Music, SFX, Voice.");
             return null;
         }
         #endregion
 
-        #region Mute Control Methods
+        #region Volume
+        /// <summary>Sets the linear volume [0, 1] of a bus. 0 counts as muted.</summary>
+        /// <param name="notify">False to skip <see cref="VolumeChanged"/>, e.g. when restoring saved volumes.</param>
+        public static void SetVolume(AudioBus bus, float volume, bool notify = true)
+        {
+            var state = GetState(bus);
+            if (state == null) return;
+
+            volume = Mathf.Clamp01(volume);
+            if (volume > MuteThreshold)
+            {
+                state.volumeBeforeMute = volume;
+            }
+            state.volume = volume;
+
+            Apply(bus);
+            if (notify) VolumeChanged?.Invoke(bus, volume);
+        }
+
+        /// <summary>Returns the linear volume [0, 1] of a bus.</summary>
+        public static float GetVolume(AudioBus bus)
+        {
+            var state = GetState(bus);
+            return state != null ? state.volume : 0f;
+        }
+
+        private static void Apply(AudioBus bus)
+        {
+            if (Config == null || Config.Mixer == null) return;
+
+            float volume = GetState(bus).volume;
+            float decibels = volume <= MuteThreshold ? MutedDecibels : Mathf.Log10(volume) * 20f;
+            if (!Config.Mixer.SetFloat(bus.ToString(), decibels) && !_missingParameterReported)
+            {
+                // Reported once: a slider drag would otherwise log on every frame.
+                _missingParameterReported = true;
+                MUPLogger.Warning($"AudioManager: exposed parameter '{bus}' not found on mixer '{Config.Mixer.name}'.");
+            }
+        }
+        #endregion
+
         /// <summary>
-        /// Toggles mute state for a specific audio group
+        /// True while the source plays, or while its clip is still loading after <c>Play()</c>
+        /// (clips without Preload Audio Data can report <c>isPlaying = false</c> for a few frames).
         /// </summary>
-        /// <param name="parameter">The exposed parameter name in the AudioMixer</param>
-        private static void ToggleMute(AudioSetting audioSetting)
+        internal static bool IsBusy(AudioSource source)
         {
-            if (AudioMixer == null) return;
-            if (audioSetting.isMuted)
-            {
-                var volumeToRestore = audioSetting.beforeMutedVolume > MuteThreshold
-                    ? audioSetting.beforeMutedVolume
-                    : Mathf.Max(audioSetting.defaultVolume, MuteThreshold);
-                SetVolume(audioSetting, volumeToRestore);
-            }
-            else
-            {
-                var lastAudibleVolume = audioSetting.currentVolume > MuteThreshold
-                    ? audioSetting.currentVolume
-                    : Mathf.Max(Mathf.Max(audioSetting.beforeMutedVolume, audioSetting.defaultVolume), MuteThreshold);
-                audioSetting.beforeMutedVolume = lastAudibleVolume;
-                SetVolume(audioSetting, 0f);
-            }
+            if (source.isPlaying) return true;
+            return source.clip != null && source.clip.loadState == AudioDataLoadState.Loading;
         }
 
-        public static void ToggleMute(AudioType audioType)
+        #region Mute
+        /// <summary>True when the bus volume is at 0.</summary>
+        public static bool IsMuted(AudioBus bus) => GetVolume(bus) <= MuteThreshold;
+
+        /// <summary>Mutes the bus, or restores the volume it had before being muted.</summary>
+        public static void ToggleMute(AudioBus bus)
         {
-            EnsureInitialized();
-            ToggleMute(GetAudioSettingsFromAudioType(audioType));
+            var state = GetState(bus);
+            if (state == null) return;
+            SetVolume(bus, IsMuted(bus) ? state.volumeBeforeMute : 0f);
         }
 
-        // Retourne la sprite mute/unmute selon l'état courant
-        public static Sprite GetMuteSprite(AudioType audioType)
+        /// <summary>Returns the muted or unmuted sprite of the AudioConfig matching the bus state, or null.</summary>
+        public static Sprite GetMuteSprite(AudioBus bus)
         {
-            var setting = GetAudioSettingsFromAudioType(audioType);
-            if (setting.settingsSO == null) return null;
-            return setting.isMuted ? setting.settingsSO.mutedImage : setting.settingsSO.unmutedImage;
+            if (Config == null) return null;
+            return IsMuted(bus) ? Config.MutedSprite : Config.UnmutedSprite;
         }
         #endregion
     }
