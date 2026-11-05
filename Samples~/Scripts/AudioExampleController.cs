@@ -6,7 +6,7 @@ namespace MyUnityPackage.Toolkit
     /// <summary>
     /// Sample controller wiring the AudioExampleScene UI to the Toolkit audio managers.
     /// Voices (VoiceAgent), UI clicks (UIButtonSound) and world sounds (AudioSource, RandomIntervalSound)
-    /// need no code: only music, the one-shot SFX, the voice panel and the listener position are driven here.
+    /// need no code: only music, the one-shot SFX, the voice panel, the listener position and the fire's output are driven here.
     /// </summary>
     public class AudioExampleController : MonoBehaviour
     {
@@ -28,11 +28,23 @@ namespace MyUnityPackage.Toolkit
         [Header("Spatial")]
         [Tooltip("Object holding the scene's AudioListener, moved by SetListenerX.")]
         [SerializeField] private Transform listener;
+        [Tooltip("Looping AudioSource placed in the scene, with no output so it follows the project's AudioConfig.")]
+        [SerializeField] private AudioSource fire;
 
         private float _musicAVolume = 1f;
         private float _musicBVolume = 1f;
 
         private MusicManager Music => ServiceLocator.GetService<MusicManager>();
+
+        // A sample cannot reference the mixer of the project importing it: route the plain AudioSource
+        // to the World group of whichever AudioConfig is loaded (RandomIntervalSound does it by itself).
+        private void Start()
+        {
+            if (fire != null && fire.outputAudioMixerGroup == null && AudioManager.Config != null)
+            {
+                fire.outputAudioMixerGroup = AudioManager.Config.WorldGroup;
+            }
+        }
 
         public void PlayMusicA() => Music.Play(musicA, _musicAVolume);
         public void PlayMusicB() => Music.Play(musicB, _musicBVolume);

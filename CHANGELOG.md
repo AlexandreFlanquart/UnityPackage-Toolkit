@@ -1,3 +1,8 @@
+## [1.0.9] - 2026-11-05
+
+### Fixed
+- Sample: the UI click sounds and the scene's fire and bird were hard-wired to the sample mixer, so once the sample was imported into a project with its own `AudioConfig`, the bus sliders and mute did not reach them. Their outputs are now empty and follow the loaded `AudioConfig`
+
 ## [1.0.8] - 2026-11-05
 Audio system rework. ⚠️ Breaking: see *Migration* below.
 

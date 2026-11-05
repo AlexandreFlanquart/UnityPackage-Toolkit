@@ -215,8 +215,11 @@ Mobile devices output at 48 kHz: sources at 96 or 192 kHz only waste memory. Pre
 - **`AudioListener.pause`** (set by `AudioFocusHandler` in background) pauses every source, UI included. A game pause menu that should keep UI clicks must not use it.
 - **`VoiceAgent`**: on a touch screen, `playOnHover` fires on touch and `playOnClick` on release — tick only one of them.
 - **`AudioUpdater`** shows "Mute" / "Unmute" as plain text: leave `muteText` empty in a localized UI and rely on the mute sprites.
+- **An `AudioSource` placed in a scene or prefab with an empty `Output`** bypasses the mixer: no bus slider or mute reaches it. Route it to a group of your project's mixer (World for map sounds).
 - **Importing the sample** adds `Resources/AudioConfig` to your project: if you already have one, `Resources.Load` becomes ambiguous — delete one of them.
 
 ## Sample
 
 `AudioExampleScene` shows every case: two music loops with their own volume sliders, the three `VoiceAgent` triggers, overlapping UI clicks, a looping fire and a random bird around a movable listener, and the three bus sliders. Its sounds are generated placeholders.
+
+No sample asset references the sample mixer: the `SoundSO` outputs and the scene's `AudioSource` outputs are empty, so everything follows the `AudioConfig` that `Resources.Load` finds — the project's own one when the sample is imported next to it. `RandomIntervalSound` routes its source to the World group by itself; `AudioExampleController` does it for the looping fire.
