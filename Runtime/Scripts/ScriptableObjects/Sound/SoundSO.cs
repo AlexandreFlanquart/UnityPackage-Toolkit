@@ -59,6 +59,17 @@ namespace MyUnityPackage.Toolkit
             _activeInstances = 0;
         }
 
+        /// <summary>
+        /// Plays this sound on the UI group through <see cref="SFXManager.PlayUI"/>.
+        /// Meant for any UnityEvent (button click, toggle, slider, Event Trigger): drag the asset into the event.
+        /// </summary>
+        public void PlayUI()
+        {
+            var sfx = ServiceLocator.GetService<SFXManager>();
+            if (sfx != null) sfx.PlayUI(this);
+            else MUPLogger.Warning($"SoundSO '{name}': no SFXManager registered, PlayUI ignored.", this);
+        }
+
         /// <summary>Returns true when the sound is allowed to play (cooldown elapsed and instance limit not reached).</summary>
         public bool CanPlay()
         {

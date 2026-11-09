@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- Add `SoundSO.PlayUI()`, callable from any UnityEvent (button click, toggle, slider, Event Trigger) to play the sound on the UI group
 - Sample: `AudioExampleScene` also shows `OneShotSound` (random variant on click), a 3D sound played by code at a position, and a toggle playing a clip through `AudioSource.PlayOneShot` from its event
 
 ## [1.0.10] - 2026-11-09
