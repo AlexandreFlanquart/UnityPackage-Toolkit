@@ -1,3 +1,8 @@
+## [Unreleased]
+
+### Added
+- Sample: `AudioExampleScene` also shows `OneShotSound` (random variant on click), a 3D sound played by code at a position, and a toggle playing a clip through `AudioSource.PlayOneShot` from its event
+
 ## [1.0.10] - 2026-11-09
 
 ### Added

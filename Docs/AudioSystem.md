@@ -227,6 +227,6 @@ Mobile devices output at 48 kHz: sources at 96 or 192 kHz only waste memory. Pre
 
 ## Sample
 
-`AudioExampleScene` shows every case: two music loops with their own volume sliders, the three `VoiceAgent` triggers, overlapping UI clicks, a looping fire and a random bird around a movable listener, and the three bus sliders. Its sounds are generated placeholders.
+`AudioExampleScene` shows every case: two music loops with their own volume sliders, the three `VoiceAgent` triggers, overlapping UI clicks, a toggle calling `AudioSource.PlayOneShot` from its event, a 2D sound played by code, a looping fire, a random bird and a `OneShotSound` played on click around a movable listener, a 3D sound played by code at the fire's position (`SFXManager.Play(sound, position)`), and the three bus sliders. Its sounds are generated placeholders.
 
-No sample asset references the sample mixer: the `SoundSO` outputs and the scene's `AudioSource` outputs are empty, so everything follows the `AudioConfig` that `Resources.Load` finds — the project's own one when the sample is imported next to it. `RandomIntervalSound` routes its source to the World group by itself; `AudioExampleController` does it for the looping fire.
+No sample asset references the sample mixer: the `SoundSO` outputs and the scene's `AudioSource` outputs are empty, so everything follows the `AudioConfig` that `Resources.Load` finds — the project's own one when the sample is imported next to it. `RandomIntervalSound` routes its source to the World group by itself; `AudioExampleController` does it for the looping fire (World) and for the toggle's plain `AudioSource` (UI).
