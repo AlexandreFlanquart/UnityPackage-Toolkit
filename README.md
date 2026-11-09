@@ -9,7 +9,7 @@ This toolkit is designed for developers who want a solid, modular foundation for
 
 Detailed documentation for each system is available in the `Docs/` folder:
 
-- [Docs/AudioSystem.md](Docs/AudioSystem.md): `AudioConfigSO` and AudioMixer setup, `AudioManager` (Music / Voice / SFX bus volumes), `MusicManager` (simultaneous loops), `VoiceManager` / `VoiceAgent` (one voice at a time, localized `VoiceLineSO`), `SFXManager` (UI, 2D and 3D one-shots), `RandomIntervalSound` and world sounds, `SoundSO` sound assets.
+- [Docs/AudioSystem.md](Docs/AudioSystem.md): `AudioConfigSO` and AudioMixer setup, `AudioManager` (Music / Voice / SFX bus volumes), `MusicManager` (simultaneous loops), `VoiceManager` / `VoiceAgent` (one voice at a time, localized `VoiceLineSO`), `SFXManager` (UI, 2D and 3D one-shots), `RandomIntervalSound`, `OneShotSound` and world sounds, `SoundSO` sound assets.
 - [Docs/UISystem.md](Docs/UISystem.md): UI canvas management helpers, base classes, and safe-area handling.
 - [Docs/ServiceLocator.md](Docs/ServiceLocator.md): ServiceLocator pattern, creation, and lifecycle of services.
 - [Docs/ObjectPool.md](Docs/ObjectPool.md): object pooling and a pool locator helper.

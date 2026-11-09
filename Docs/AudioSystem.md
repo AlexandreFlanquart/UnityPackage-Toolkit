@@ -9,7 +9,7 @@ The audio system covers four kinds of sound, each with one dedicated player:
 | 2D music and ambience loops | `MusicManager` | Any number at once, each with its own volume |
 | Voice (instructions, dialogue) | `VoiceManager` + `VoiceAgent` | One at a time — a new voice interrupts the current one |
 | One-shots: UI clicks, 2D effects, 3D effects at a position | `SFXManager` + `UIButtonSound` | Overlap freely (pool) |
-| Sounds placed in the world | a plain `AudioSource` (loops) or `RandomIntervalSound` (from time to time) | 3D, attenuated by distance to the `AudioListener` |
+| Sounds placed in the world | a plain `AudioSource` (loops), `RandomIntervalSound` (from time to time) or `OneShotSound` (once, on an event) | 3D, attenuated by distance to the `AudioListener` |
 
 The player controls three volume buses with `AudioManager` / `AudioUpdater`:
 
@@ -153,7 +153,7 @@ Each call returns a `SoundHandle` (`IsPlaying`, `Stop()`). A handle stays safe a
 
 **File:** [`Runtime/Scripts/ScriptableObjects/Sound/SoundSO.cs`](../Runtime/Scripts/ScriptableObjects/Sound/SoundSO.cs)
 
-**Create → MyUnityPackage → Audio → Sound.** Used by `SFXManager`, `UIButtonSound` and `RandomIntervalSound` (music uses plain clips).
+**Create → MyUnityPackage → Audio → Sound.** Used by `SFXManager`, `UIButtonSound`, `RandomIntervalSound` and `OneShotSound` (music uses plain clips).
 
 - `clips`: variants, never the same twice in a row
 - `output`: mixer group; empty = the player's default (table above)
@@ -172,12 +172,19 @@ Plays `clickSound` through `SFXManager.PlayUI` when its `Button` is clicked, or 
 
 - **Continuous loop** (campfire, river): add an `AudioSource` on the object — clip, *Loop*, *Play On Awake*, *Spatial Blend* = 1, *Doppler Level* = 0, output = World group, *Linear* or *Custom* rolloff with min/max distance in world units. No script needed. A Unity **Preset** set as default for `AudioSource` (Preset Manager) applies these settings to every new source.
 - **From time to time** (bird): same `AudioSource` without *Loop*, plus `RandomIntervalSound`.
+- **Once, on an event** (a lock being opened): same `AudioSource` without *Loop* nor *Play On Awake*, plus `OneShotSound`; call `Play()` from a `UnityEvent` or from code. A single clip needs no script: call `AudioSource.Play()` directly.
 
 ### RandomIntervalSound
 
 **File:** [`Runtime/Scripts/Audio/RandomIntervalSound.cs`](../Runtime/Scripts/Audio/RandomIntervalSound.cs)
 
 Plays a random variant of its `sound` on the `AudioSource` of the same object, waits a random `minDelay`–`maxDelay` seconds after the sound ends, and starts again. The first sound also waits one delay. The delay uses game time: the birds go quiet while `Time.timeScale` is 0. 3D settings come from the `AudioSource`; the sound's volume/pitch randomisation applies, its cooldown and instance limit do not. `playOnEnable` (default on) or `StartPlaying()` / `StopPlaying()`; stops on disable.
+
+### OneShotSound
+
+**File:** [`Runtime/Scripts/Audio/OneShotSound.cs`](../Runtime/Scripts/Audio/OneShotSound.cs)
+
+`Play()` plays one random variant of its `sound` on the `AudioSource` of the same object, with `PlayOneShot`: calls close together overlap instead of cutting each other. Meant for a `UnityEvent` (e.g. an interaction effect) or code. 3D settings come from the `AudioSource`, routed to the World group when its output is empty; the sound's volume/pitch randomisation applies, its cooldown and instance limit do not.
 
 ### AudioUpdater — settings UI
 

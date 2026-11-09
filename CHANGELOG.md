@@ -1,3 +1,8 @@
+## [1.0.10] - 2026-11-09
+
+### Added
+- Add `OneShotSound`: plays a random variant of a `SoundSO` once on its own `AudioSource` when `Play()` is called from a UnityEvent or code (e.g. a lock opened by the player)
+
 ## [1.0.9] - 2026-11-05
 
 ### Fixed

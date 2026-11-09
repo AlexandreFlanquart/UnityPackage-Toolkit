@@ -17,7 +17,7 @@ Runtime/Scripts/
 ├── Static/          ServiceLocator
 ├── Managers/        AudioManager*, MusicManager, SFXManager, VoiceManager,
 │                    AudioFocusHandler
-├── Audio/           AudioUpdater, VoiceAgent, RandomIntervalSound, SoundHandle
+├── Audio/           AudioUpdater, VoiceAgent, RandomIntervalSound, OneShotSound, SoundHandle
 ├── UI/              UIButtonSound, CanvasHelper, UI_Base
 ├── ObjectPool/      MUP_ObjectPool, MUP_ObjectPoolLocator
 ├── Localization/    LanguageSwitcher (#if I2LOC_PRESENT)
@@ -67,7 +67,7 @@ Full reference: `Docs/AudioSystem.md`.
 | `VoiceManager` | One voice at a time, a new one interrupts | `Play(VoiceLineSO)`, `Play(clip)`, `Stop`, `VoiceEnded` |
 | `SFXManager` | Pooled one-shots: 2D, UI, 3D at a position | `Play(sound)`, `Play(sound, position)`, `PlayUI(sound)`, `Play(clip)` → `SoundHandle` |
 
-- **Components**: `VoiceAgent` (voice on enable / hover / click), `UIButtonSound` (its `SoundSO` or the config default click), `RandomIntervalSound` (random variant at random intervals on its own `AudioSource`), `AudioUpdater` (bus slider + mute), `AudioFocusHandler`.
+- **Components**: `VoiceAgent` (voice on enable / hover / click), `UIButtonSound` (its `SoundSO` or the config default click), `RandomIntervalSound` (random variant at random intervals on its own `AudioSource`), `OneShotSound` (random variant once, on `Play()`), `AudioUpdater` (bus slider + mute), `AudioFocusHandler`.
 - **World loops need no script**: a plain looping `AudioSource` routed to the World group.
 - `SoundSO.CanPlay()` / `OnPlay()` / `OnStop()` are called by `SFXManager` only. Naming: "sound" = a `SoundSO` asset; "clip" = a raw `AudioClip` (music, voices).
 - `SoundHandle` uses a per-source generation counter: a stale handle never stops a sound that reused its source. `VoiceAgent` stops only its own playback through `VoiceManager.PlayId`.
