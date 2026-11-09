@@ -18,7 +18,7 @@ Runtime/Scripts/
 ├── Managers/        AudioManager*, MusicManager, SFXManager, VoiceManager,
 │                    AudioFocusHandler
 ├── Audio/           AudioUpdater, VoiceAgent, RandomIntervalSound, OneShotSound, SoundHandle
-├── UI/              UIButtonSound, CanvasHelper, UI_Base
+├── UI/              CanvasHelper, UI_Base
 ├── ObjectPool/      MUP_ObjectPool, MUP_ObjectPoolLocator
 ├── Localization/    LanguageSwitcher (#if I2LOC_PRESENT)
 ├── Utils/           MUPLogger*, TimerHandler, SceneLoader, ProjectVersionDisplay
@@ -57,7 +57,7 @@ The define `I2LOC_PRESENT` is set automatically via `versionDefines` in the asmd
 
 Full reference: `Docs/AudioSystem.md`.
 
-- **Config**: one `AudioConfigSO` at `Resources/AudioConfig` (`AudioManager.ConfigResourcePath`) references the mixer, the default output groups (Music, Voice, SFX, UI, World), the default bus volumes, the default click sound and the mute sprites. No string lookup of mixer groups.
+- **Config**: one `AudioConfigSO` at `Resources/AudioConfig` (`AudioManager.ConfigResourcePath`) references the mixer, the default output groups (Music, Voice, SFX, UI, World), the default bus volumes and the mute sprites. No string lookup of mixer groups.
 - **Volumes**: `AudioManager` (static) drives three `AudioBus` values — `Music = 0`, `SFX = 1`, `Voice = 2` (serialized, do not reorder) — each matching a mixer exposed parameter **named exactly** after it. It does not persist volumes: consumers save from `AudioManager.VolumeChanged` and restore with `SetVolume`.
 - **Players** (ServiceLocator, one GameObject):
 
@@ -67,7 +67,7 @@ Full reference: `Docs/AudioSystem.md`.
 | `VoiceManager` | One voice at a time, a new one interrupts | `Play(VoiceLineSO)`, `Play(clip)`, `Stop`, `VoiceEnded` |
 | `SFXManager` | Pooled one-shots: 2D, UI, 3D at a position | `Play(sound)`, `Play(sound, position)`, `PlayUI(sound)`, `Play(clip)` → `SoundHandle` |
 
-- **Components**: `VoiceAgent` (voice on enable / hover / click), `UIButtonSound` (its `SoundSO` or the config default click), `RandomIntervalSound` (random variant at random intervals on its own `AudioSource`), `OneShotSound` (random variant once, on `Play()`), `AudioUpdater` (bus slider + mute), `AudioFocusHandler`.
+- **Components**: `VoiceAgent` (voice on enable / hover / click), `RandomIntervalSound` (random variant at random intervals on its own `AudioSource`), `OneShotSound` (random variant once, on `Play()`), `AudioUpdater` (bus slider + mute), `AudioFocusHandler`.
 - **World loops need no script**: a plain looping `AudioSource` routed to the World group.
 - `SoundSO.CanPlay()` / `OnPlay()` / `OnStop()` are called by `SFXManager` only. Naming: "sound" = a `SoundSO` asset; "clip" = a raw `AudioClip` (music, voices).
 - `SoundHandle` uses a per-source generation counter: a stale handle never stops a sound that reused its source. `VoiceAgent` stops only its own playback through `VoiceManager.PlayId`.
@@ -98,7 +98,6 @@ when reused — do this on get, not in `Awake`/`OnEnable` (pooled instances only
 
 - `UI_Base` — abstract base for all canvases; exposes `Show()` / `Hide()` / `IsVisible` via `CanvasHelper` (fetched in `Awake`, not `Start`).
 - `CanvasHelper` — requires `Canvas` + `CanvasGroup` on the same GameObject; toggles both `enabled` and `interactable`/`blocksRaycasts` together, always explicitly on `Awake` (not just when `hideOnStart` is true) so the two never start out of sync.
-- `UIButtonSound` — plays its `clickSound` through `SFXManager.PlayUI`, or `AudioConfigSO.DefaultClickSound` when empty. A button without it is silent.
 
 ## Timer system
 

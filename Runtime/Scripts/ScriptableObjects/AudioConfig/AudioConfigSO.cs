@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Audio;
-using UnityEngine.Serialization;
 
 namespace MyUnityPackage.Toolkit
 {
@@ -22,7 +21,7 @@ namespace MyUnityPackage.Toolkit
         [SerializeField] private AudioMixerGroup voiceGroup;
         [Tooltip("Group used by SFXManager when a sound has no output set. Child of the SFX bus.")]
         [SerializeField] private AudioMixerGroup sfxGroup;
-        [Tooltip("Group used for UI sounds (SFXManager.PlayUI, UIButtonSound) when a sound has no output set. Child of the SFX bus.")]
+        [Tooltip("Group used for UI sounds (SFXManager.PlayUI, SoundSO.PlayUI) when a sound has no output set. Child of the SFX bus.")]
         [SerializeField] private AudioMixerGroup uiGroup;
         [Tooltip("Group used for spatial sounds placed in the world (SFXManager.Play with a position, RandomIntervalSound). Child of the SFX bus.")]
         [SerializeField] private AudioMixerGroup worldGroup;
@@ -36,9 +35,6 @@ namespace MyUnityPackage.Toolkit
         [SerializeField, Range(0f, 1f)] private float defaultSfxVolume = 0.8f;
 
         [Header("UI")]
-        [Tooltip("Click played by UIButtonSound when the button has no sound of its own.")]
-        [FormerlySerializedAs("defaultClickCue")]
-        [SerializeField] private SoundSO defaultClickSound;
         [Tooltip("Mute button sprite shown by AudioUpdater while a bus is muted.")]
         [SerializeField] private Sprite mutedSprite;
         [Tooltip("Mute button sprite shown by AudioUpdater while a bus is audible.")]
@@ -50,7 +46,6 @@ namespace MyUnityPackage.Toolkit
         public AudioMixerGroup SFXGroup => sfxGroup;
         public AudioMixerGroup UIGroup => uiGroup;
         public AudioMixerGroup WorldGroup => worldGroup;
-        public SoundSO DefaultClickSound => defaultClickSound;
         public Sprite MutedSprite => mutedSprite;
         public Sprite UnmutedSprite => unmutedSprite;
 

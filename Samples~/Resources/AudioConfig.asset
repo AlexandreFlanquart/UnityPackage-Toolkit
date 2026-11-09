@@ -21,6 +21,5 @@ MonoBehaviour:
   defaultMusicVolume: 0.8
   defaultVoiceVolume: 0.8
   defaultSfxVolume: 0.8
-  defaultClickSound: {fileID: 11400000, guid: df327212c3b02844a9bd8c400f1d7361, type: 2}
   mutedSprite: {fileID: 21300000, guid: 6062d04f0d7fb4f4088ad2592605972d, type: 3}
   unmutedSprite: {fileID: 21300000, guid: 1fc72f3ee0c063d448aee868bbb2915b, type: 3}

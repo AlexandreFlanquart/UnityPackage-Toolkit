@@ -2,7 +2,11 @@
 
 ### Added
 - Add `SoundSO.PlayUI()`, callable from any UnityEvent (button click, toggle, slider, Event Trigger) to play the sound on the UI group
-- Sample: `AudioExampleScene` also shows `OneShotSound` (random variant on click), a 3D sound played by code at a position, and a toggle playing a clip through `AudioSource.PlayOneShot` from its event
+- Sample: `AudioExampleScene` also shows `OneShotSound` (random variant on click), a 3D sound played by code at a position, and a toggle playing a sound with `SoundSO.PlayUI` from its event
+
+### Removed
+- ⚠️ Breaking: remove `UIButtonSound` and `AudioConfigSO.defaultClickSound`. Every UI element now plays its sound the same way: its event calls `SoundSO.PlayUI()` on the asset. Migration: on each button with `UIButtonSound`, add an `On Click` call to the button's `SoundSO` (or to the former default click asset) > `PlayUI`, then remove the component
+- Sample: buttons use `SoundSO.PlayUI` instead of `UIButtonSound`
 
 ## [1.0.10] - 2026-11-09
 

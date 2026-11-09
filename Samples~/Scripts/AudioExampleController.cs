@@ -5,9 +5,9 @@ namespace MyUnityPackage.Toolkit
 {
     /// <summary>
     /// Sample controller wiring the AudioExampleScene UI to the Toolkit audio managers.
-    /// Voices (VoiceAgent), UI clicks (UIButtonSound), the toggle sound (AudioSource.PlayOneShot) and world sounds
+    /// Voices (VoiceAgent), UI sounds (SoundSO.PlayUI from the button and toggle events) and world sounds
     /// (AudioSource, RandomIntervalSound, OneShotSound) need no code: only music, the SFX played by code, the voice panel,
-    /// the listener position and the outputs of the plain AudioSources are driven here.
+    /// the listener position and the fire's output are driven here.
     /// </summary>
     public class AudioExampleController : MonoBehaviour
     {
@@ -21,8 +21,6 @@ namespace MyUnityPackage.Toolkit
         [Tooltip("Sound played by PlaySFX (2D) and PlaySFXAtFire (3D at the fire's position).")]
         [FormerlySerializedAs("sfxCue")]
         [SerializeField] private SoundSO sfxSound;
-        [Tooltip("Plain 2D AudioSource called by UI events (the toggle) with PlayOneShot, routed to the UI group.")]
-        [SerializeField] private AudioSource uiSource;
 
         [Header("Voice")]
         [Tooltip("Panel holding a VoiceAgent set to play on enable.")]
@@ -43,9 +41,10 @@ namespace MyUnityPackage.Toolkit
         // to the World group of whichever AudioConfig is loaded (RandomIntervalSound does it by itself).
         private void Start()
         {
-            if (AudioManager.Config == null) return;
-            if (fire != null && fire.outputAudioMixerGroup == null) fire.outputAudioMixerGroup = AudioManager.Config.WorldGroup;
-            if (uiSource != null && uiSource.outputAudioMixerGroup == null) uiSource.outputAudioMixerGroup = AudioManager.Config.UIGroup;
+            if (fire != null && fire.outputAudioMixerGroup == null && AudioManager.Config != null)
+            {
+                fire.outputAudioMixerGroup = AudioManager.Config.WorldGroup;
+            }
         }
 
         public void PlayMusicA() => Music.Play(musicA, _musicAVolume);

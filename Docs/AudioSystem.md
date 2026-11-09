@@ -8,7 +8,7 @@ The audio system covers four kinds of sound, each with one dedicated player:
 |---|---|---|
 | 2D music and ambience loops | `MusicManager` | Any number at once, each with its own volume |
 | Voice (instructions, dialogue) | `VoiceManager` + `VoiceAgent` | One at a time — a new voice interrupts the current one |
-| One-shots: UI clicks, 2D effects, 3D effects at a position | `SFXManager` + `UIButtonSound` | Overlap freely (pool) |
+| One-shots: UI clicks, 2D effects, 3D effects at a position | `SFXManager`, or `SoundSO.PlayUI()` from any UI event | Overlap freely (pool) |
 | Sounds placed in the world | a plain `AudioSource` (loops), `RandomIntervalSound` (from time to time) or `OneShotSound` (once, on an event) | 3D, attenuated by distance to the `AudioListener` |
 
 The player controls three volume buses with `AudioManager` / `AudioUpdater`:
@@ -47,7 +47,6 @@ Optional, no code: voice ducking — an **Audio Mixer Send** from `Voice` into a
 | `mixer` | The project AudioMixer |
 | `musicGroup`, `voiceGroup`, `sfxGroup`, `uiGroup`, `worldGroup` | Default output of each player when a sound has no output set |
 | `defaultMusicVolume`, `defaultVoiceVolume`, `defaultSfxVolume` | Bus volumes at startup |
-| `defaultClickSound` | Click played by `UIButtonSound` when the button has no sound of its own |
 | `mutedSprite`, `unmutedSprite` | Mute button images used by `AudioUpdater` |
 
 ### 3. Audio system GameObject
@@ -153,7 +152,7 @@ Each call returns a `SoundHandle` (`IsPlaying`, `Stop()`). A handle stays safe a
 
 **File:** [`Runtime/Scripts/ScriptableObjects/Sound/SoundSO.cs`](../Runtime/Scripts/ScriptableObjects/Sound/SoundSO.cs)
 
-**Create → MyUnityPackage → Audio → Sound.** Used by `SFXManager`, `UIButtonSound`, `RandomIntervalSound` and `OneShotSound` (music uses plain clips).
+**Create → MyUnityPackage → Audio → Sound.** Used by `SFXManager`, `RandomIntervalSound` and `OneShotSound`, or played directly with `PlayUI()` (music uses plain clips).
 
 - `clips`: variants, never the same twice in a row
 - `output`: mixer group; empty = the player's default (table above)
@@ -162,11 +161,9 @@ Each call returns a `SoundHandle` (`IsPlaying`, `Stop()`). A handle stays safe a
 
 `CanPlay()` / `OnPlay()` / `OnStop()` are called by `SFXManager` — do not call them manually.
 
-### UIButtonSound
+### UI sounds — `SoundSO.PlayUI()`
 
-**File:** [`Runtime/Scripts/UI/UIButtonSound.cs`](../Runtime/Scripts/UI/UIButtonSound.cs)
-
-Plays `clickSound` through `SFXManager.PlayUI` when its `Button` is clicked, or the config's `defaultClickSound` when `clickSound` is empty. A button without `UIButtonSound` makes no sound: there is no global click.
+Every UI sound goes through the same gesture, whatever the element: in its event (`Button > On Click`, `Toggle > On Value Changed`, `Slider > On Value Changed`, an `Event Trigger` entry), add a call, drag the `SoundSO` asset as the target and pick `SoundSO > PlayUI ()`. The sound plays through `SFXManager.PlayUI` on the UI group, with the asset's variants and randomisation, and nothing needs to be placed in the screen (an asset can be referenced from any prefab). An element without such a call makes no sound: there is no global click. To change the click of every button at once, change the clips of the shared click asset.
 
 ### World sounds
 
@@ -227,6 +224,6 @@ Mobile devices output at 48 kHz: sources at 96 or 192 kHz only waste memory. Pre
 
 ## Sample
 
-`AudioExampleScene` shows every case: two music loops with their own volume sliders, the three `VoiceAgent` triggers, overlapping UI clicks, a toggle calling `AudioSource.PlayOneShot` from its event, a 2D sound played by code, a looping fire, a random bird and a `OneShotSound` played on click around a movable listener, a 3D sound played by code at the fire's position (`SFXManager.Play(sound, position)`), and the three bus sliders. Its sounds are generated placeholders.
+`AudioExampleScene` shows every case: two music loops with their own volume sliders, the three `VoiceAgent` triggers, overlapping UI clicks, buttons and a toggle calling `SoundSO.PlayUI` from their events, a 2D sound played by code, a looping fire, a random bird and a `OneShotSound` played on click around a movable listener, a 3D sound played by code at the fire's position (`SFXManager.Play(sound, position)`), and the three bus sliders. Its sounds are generated placeholders.
 
-No sample asset references the sample mixer: the `SoundSO` outputs and the scene's `AudioSource` outputs are empty, so everything follows the `AudioConfig` that `Resources.Load` finds — the project's own one when the sample is imported next to it. `RandomIntervalSound` routes its source to the World group by itself; `AudioExampleController` does it for the looping fire (World) and for the toggle's plain `AudioSource` (UI).
+No sample asset references the sample mixer: the `SoundSO` outputs and the scene's `AudioSource` outputs are empty, so everything follows the `AudioConfig` that `Resources.Load` finds — the project's own one when the sample is imported next to it. `RandomIntervalSound` routes its source to the World group by itself; `AudioExampleController` does it for the looping fire.
